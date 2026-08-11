@@ -16,8 +16,8 @@
   <!-- html2pdf.js for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
+  <!-- Custom CSS (Root-relative path for clean deployment routes) -->
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="mobile-app">
 
@@ -31,7 +31,7 @@
     <!-- GLASSMORPHISM WHITE HEADER WITH REFRESH ICON BUTTON -->
     <header class="mobile-header">
       <div class="brand">
-        <img src="logo-jejakimani.png" alt="Jejak Imani Logo" class="header-logo-raw">
+        <img src="/logo-jejakimani.png" alt="Jejak Imani Logo" class="header-logo-raw">
         <div>
           <h1 class="brand-title">Tanda Terima Pembayaran</h1>
           <p class="brand-subtitle">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</p>
@@ -291,6 +291,6 @@
 
   </div>
 
-  <script src="app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
