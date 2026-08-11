@@ -5,6 +5,10 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3A7kYSe8LnYmNmVyqGzNAG78oeTj5Uqff41pbK4NKfM2UDUYZnuceYEp0LEKzanFllQ/exec';
 const STORAGE_KEY = 'bukti_pembayaran_jejakimani_sheets_live_v2';
 const SIGNATURES_KEY = 'bukti_pembayaran_signatures_store';
+const MASTER_KEY = 'bukti_pembayaran_master_data_v1';
+
+// Clear old sample data keys from previous versions
+['bukti_pembayaran_jejakimani_v16', 'bukti_pembayaran_jejakimani_v17', 'bukti_pembayaran_jejakimani_v18', 'bukti_pembayaran_jejakimani_v19', 'bukti_pembayaran_jejakimani_v20', 'bukti_pembayaran_jejakimani_v21', 'bukti_pembayaran_jejakimani_db_v1'].forEach(k => localStorage.removeItem(k));
 
 // Default initial vouchers matching spreadsheet rows
 const DEFAULT_SHEET_VOUCHERS = [
@@ -63,9 +67,15 @@ const DEFAULT_SHEET_VOUCHERS = [
   }
 ];
 
-// App State (Populates with initial vouchers for 0-second instant load)
+// App State
 let vouchers = JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_SHEET_VOUCHERS;
 let signaturesStore = JSON.parse(localStorage.getItem(SIGNATURES_KEY)) || {};
+let masterData = JSON.parse(localStorage.getItem(MASTER_KEY)) || {
+  namaList: [],
+  kebutuhanList: [],
+  keteranganList: []
+};
+
 let currentVoucher = null;
 let selectedVoucher = null;
 let signatureDataUrl = null;
@@ -104,6 +114,7 @@ function preloadImagesAsBase64() {
 // DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
   preloadImagesAsBase64();
+  updateDatalists();
 
   const isRecipientPage = window.location.pathname.endsWith('penerima.html') || window.location.href.includes('penerima.html');
   const urlParams = new URLSearchParams(window.location.search);
@@ -125,8 +136,55 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     initAdminPortal();
     fetchFromGoogleSheets();
+    fetchMasterData();
   }
 });
+
+// FETCH MASTER DATA FOR SEARCHBAR AUTOCOMPLETE SUGGESTIONS
+async function fetchMasterData() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=getMasterData`);
+    if (res.ok) {
+      const text = await res.text();
+      if (text.startsWith('{') && text.endsWith('}')) {
+        const data = JSON.parse(text);
+        if (data && (Array.isArray(data.namaList) || Array.isArray(data.kebutuhanList) || Array.isArray(data.keteranganList))) {
+          masterData = {
+            namaList: Array.isArray(data.namaList) ? data.namaList : masterData.namaList,
+            kebutuhanList: Array.isArray(data.kebutuhanList) ? data.kebutuhanList : masterData.kebutuhanList,
+            keteranganList: Array.isArray(data.keteranganList) ? data.keteranganList : masterData.keteranganList
+          };
+          localStorage.setItem(MASTER_KEY, JSON.stringify(masterData));
+          updateDatalists();
+        }
+      }
+    }
+  } catch (e) {
+    console.log('Master Data fetch notice:', e);
+  }
+}
+
+// DYNAMICALLY FILL HTML5 DATALISTS FOR AUTOCOMPLETE
+function updateDatalists() {
+  fillDatalist('list-nama-penerima', masterData.namaList);
+  fillDatalist('list-kebutuhan-grup', masterData.kebutuhanList);
+  fillDatalist('list-keterangan', masterData.keteranganList);
+}
+
+function fillDatalist(elementId, items) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.innerHTML = '';
+  
+  if (Array.isArray(items)) {
+    const uniqueItems = [...new Set(items.filter(x => x && String(x).trim() !== ''))];
+    uniqueItems.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item;
+      el.appendChild(opt);
+    });
+  }
+}
 
 function showLoadingRecipientState() {
   const container = document.getElementById('pdf-doc-content');
@@ -157,7 +215,6 @@ async function fetchFromGoogleSheets() {
 
     if (res.ok) {
       const text = await res.text();
-      // Check if response is valid JSON array (not HTML error page)
       if (text.startsWith('[') && text.endsWith(']')) {
         const data = JSON.parse(text);
         if (Array.isArray(data) && data.length > 0) {
@@ -182,7 +239,6 @@ async function fetchFromGoogleSheets() {
             }
             const totalNominal = parseFloat(item.totalNominal) || 0;
 
-            // Merge with permanent signature store
             const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
             const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
             const isSigned = isSignedLocally || item.status === 'Sudah Ditandatangani';
@@ -339,18 +395,13 @@ function initAdminPortal() {
   const filterSelect = document.getElementById('filter-select');
   const btnRefresh = document.getElementById('btn-refresh-header');
 
-  document.getElementById('noReferensi').value = `OUT000${vouchers.length + 1}`;
-  document.getElementById('tanggal').value = new Date().toISOString().split('T')[0];
-
-  initRincianInputs();
-
   // Header Refresh Button Logic
   if (btnRefresh) {
     btnRefresh.onclick = () => {
       const icon = btnRefresh.querySelector('i');
       if (icon) icon.classList.add('spinning');
 
-      fetchFromGoogleSheets().then(() => {
+      Promise.all([fetchFromGoogleSheets(), fetchMasterData()]).then(() => {
         setTimeout(() => {
           if (icon) icon.classList.remove('spinning');
         }, 650);
@@ -358,9 +409,16 @@ function initAdminPortal() {
     };
   }
 
-  if (btnFabAdd) btnFabAdd.onclick = () => modalFormOverlay.classList.remove('hidden');
+  // Open Form Modal with 100% Clean Blank State
+  if (btnFabAdd) {
+    btnFabAdd.onclick = () => {
+      resetFormToCleanState();
+      modalFormOverlay.classList.remove('hidden');
+    };
+  }
+
   if (btnCloseForm) btnCloseForm.onclick = () => modalFormOverlay.classList.add('hidden');
-  if (btnAddRincian) btnAddRincian.onclick = () => addRincianItem('', '', 0);
+  if (btnAddRincian) btnAddRincian.onclick = () => addRincianItem('', '', '');
 
   const handleFilterChange = () => {
     const query = searchInput.value.toLowerCase();
@@ -395,13 +453,23 @@ function initAdminPortal() {
       const rincianItems = [];
       const itemCards = document.querySelectorAll('.rincian-card-item');
       itemCards.forEach((card, idx) => {
-        rincianItems.push({
-          no: idx + 1,
-          kebutuhanGrup: card.querySelector('.input-kebutuhan').value,
-          keterangan: card.querySelector('.input-keterangan').value,
-          nominal: parseFloat(card.querySelector('.input-nominal').value) || 0
-        });
+        const keb = card.querySelector('.input-kebutuhan').value.trim();
+        const ket = card.querySelector('.input-keterangan').value.trim();
+        const nom = parseFloat(card.querySelector('.input-nominal').value) || 0;
+        if (keb || ket || nom > 0) {
+          rincianItems.push({
+            no: idx + 1,
+            kebutuhanGrup: keb,
+            keterangan: ket,
+            nominal: nom
+          });
+        }
       });
+
+      if (rincianItems.length === 0) {
+        alert('Mohon isi minimal 1 rincian pembayaran.');
+        return;
+      }
 
       const totalNominal = rincianItems.reduce((acc, curr) => acc + curr.nominal, 0);
 
@@ -430,10 +498,6 @@ function initAdminPortal() {
 
       renderVouchersTable(vouchers);
       updateStats();
-
-      document.getElementById('noReferensi').value = `OUT000${vouchers.length + 1}`;
-      document.getElementById('diterimaOleh').value = '';
-      initRincianInputs();
     };
   }
 
@@ -492,6 +556,22 @@ function initAdminPortal() {
   };
 }
 
+// RESET FORM POPUP TO 100% CLEAN BLANK STATE WITH NO PRE-FILLED SAMPLES
+function resetFormToCleanState() {
+  document.getElementById('noReferensi').value = `OUT000${vouchers.length + 1}`;
+  document.getElementById('tanggal').value = new Date().toISOString().split('T')[0];
+  document.getElementById('diterimaOleh').value = '';
+  document.getElementById('diserahkanOleh').value = 'Fathur Rahman Al Masyi';
+
+  const rincianList = document.getElementById('rincian-list');
+  if (rincianList) {
+    rincianList.innerHTML = '';
+    // Single 100% blank initial rincian row
+    addRincianItem('', '', '');
+  }
+  calculateTotal();
+}
+
 function updateStats() {
   document.getElementById('stat-total-count').textContent = vouchers.length;
   document.getElementById('stat-pending-count').textContent = vouchers.filter(v => v.status === 'Menunggu Tanda Tangan').length;
@@ -499,16 +579,10 @@ function updateStats() {
 }
 
 function initRincianInputs() {
-  const rincianList = document.getElementById('rincian-list');
-  if (!rincianList) return;
-  rincianList.innerHTML = '';
-  addRincianItem('Umroh Ruby Onyx 02 Agustus 2026 Madinah Awal (9 Hari)', 'Snack Check Out Hotel Madinah', 209);
-  addRincianItem('Umroh Reguler 02 Agustus 2026 Makkah Awal (9 Hari)', 'Snack Check Out Hotel Madinah', 253);
-  addRincianItem('Umroh Private 06 Agustus 2026', 'Snack Check Out Hotel Madinah', 48);
-  calculateTotal();
+  resetFormToCleanState();
 }
 
-function addRincianItem(kebutuhan = '', keterangan = '', nominal = 0) {
+function addRincianItem(kebutuhan = '', keterangan = '', nominal = '') {
   const rincianList = document.getElementById('rincian-list');
   if (!rincianList) return;
   const count = rincianList.children.length + 1;
@@ -521,14 +595,14 @@ function addRincianItem(kebutuhan = '', keterangan = '', nominal = 0) {
       <button type="button" class="btn-remove-item"><i class="fa-solid fa-trash"></i></button>
     </div>
     <div class="form-group">
-      <input type="text" class="form-control input-kebutuhan" value="${kebutuhan}" placeholder="Kebutuhan Grup" required>
+      <input type="text" list="list-kebutuhan-grup" class="form-control input-kebutuhan" value="${kebutuhan}" placeholder="Cari / Ketik Kebutuhan Grup..." autocomplete="off" required>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <input type="text" class="form-control input-keterangan" value="${keterangan}" placeholder="Keterangan" required>
+        <input type="text" list="list-keterangan" class="form-control input-keterangan" value="${keterangan}" placeholder="Cari / Ketik Keterangan..." autocomplete="off" required>
       </div>
       <div class="form-group">
-        <input type="number" class="form-control input-nominal font-mono" value="${nominal || ''}" placeholder="SAR" style="text-align: right;" required>
+        <input type="number" class="form-control input-nominal font-mono" value="${nominal !== '' ? nominal : ''}" placeholder="Nominal SAR" style="text-align: right;" required>
       </div>
     </div>
   `;
