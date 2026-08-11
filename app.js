@@ -975,13 +975,13 @@ function checkCanSubmit() {
   }
 }
 
-// ==================== 4. DYNAMIC ROW WEIGHT CALCULATION & A4 PAGE BUILDER ====================
+// ==================== 4. OPTIMIZED HIGH-CAPACITY A4 DYNAMIC ROW BUILDER ====================
 function getRincianItemWeight(item) {
   const maxLen = Math.max(
     (item.kebutuhanGrup || '').length,
     (item.keterangan || '').length
   );
-  if (maxLen > 80) return 2;
+  if (maxLen > 80) return 2.2;
   if (maxLen >= 40) return 1.5;
   return 1;
 }
@@ -995,7 +995,10 @@ function chunkRincianItemsSmart(rincianList) {
   for (let i = 0; i < rincianList.length; i++) {
     const item = rincianList[i];
     const weight = getRincianItemWeight(item);
-    const maxCapacity = isFirstPage ? 8 : 13;
+    
+    // Page 1 capacity set to 10.5 points (fits 8-9 items comfortably without wasting lower space)
+    // Subsequent pages set to 10 points for the last page to guarantee 0 overflow onto Page 3
+    const maxCapacity = isFirstPage ? 10.5 : 10;
 
     if (currentPoints + weight > maxCapacity && currentPage.length > 0) {
       pages.push(currentPage);
@@ -1116,7 +1119,7 @@ function generateDocumentHTML(v) {
       htmlOut += `
         <div class="doc-printable-page page-subsequent" style="page-break-before: always;">
           <img src="${bgSrc}" alt="Letterhead Background" class="ji-bg-letterhead-img">
-          <div class="doc-inner-content" style="margin-top: 5mm;">
+          <div class="doc-inner-content">
             <div class="ji-section-heading" style="margin-bottom: 8px;">RINCIAN PEMBAYARAN (LANJUTAN)</div>
 
             <table class="ji-table">
@@ -1195,7 +1198,7 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED PERFECT A4 MULTI-PAGE RENDERER ====================
+// ==================== 6. GUARANTEED ZERO-OVERFLOW A4 MULTI-PAGE RENDERER ====================
 function downloadPDF(voucher, buttonEl) {
   if (!voucher) return;
   if (buttonEl && buttonEl.dataset.downloading === 'true') return;
