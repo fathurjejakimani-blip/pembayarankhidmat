@@ -975,13 +975,13 @@ function checkCanSubmit() {
   }
 }
 
-// ==================== 4. OPTIMIZED HIGH-CAPACITY A4 DYNAMIC ROW BUILDER ====================
+// ==================== 4. BALANCED MULTI-PAGE ROW BUILDER ====================
 function getRincianItemWeight(item) {
   const maxLen = Math.max(
     (item.kebutuhanGrup || '').length,
     (item.keterangan || '').length
   );
-  if (maxLen > 80) return 2.2;
+  if (maxLen > 80) return 2;
   if (maxLen >= 40) return 1.5;
   return 1;
 }
@@ -996,9 +996,9 @@ function chunkRincianItemsSmart(rincianList) {
     const item = rincianList[i];
     const weight = getRincianItemWeight(item);
     
-    // Page 1 capacity set to 10.5 points (fits 8-9 items comfortably without wasting lower space)
-    // Subsequent pages set to 10 points for the last page to guarantee 0 overflow onto Page 3
-    const maxCapacity = isFirstPage ? 10.5 : 10;
+    // Page 1 capacity: 7.5 points (fits 5-6 items cleanly without any row overlap/collision)
+    // Page 2+ capacity: 13 points (fits up to 10-11 items on Page 2 alongside signatures, preventing item 14 from spilling over to Page 3!)
+    const maxCapacity = isFirstPage ? 7.5 : 13;
 
     if (currentPoints + weight > maxCapacity && currentPage.length > 0) {
       pages.push(currentPage);
