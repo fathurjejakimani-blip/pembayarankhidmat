@@ -805,7 +805,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   A4 PREVIEW FRAME WITH BOUNDED A4 ASPECT RATIO (210/297)
+   A4 PREVIEW FRAME & DYNAMIC MULTI-PAGE A4 CONTAINER SYSTEM
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -826,7 +826,18 @@ body.bg-soft {
 
 .doc-printable-wrapper {
   width: 794px; /* Native 96DPI A4 Width */
-  height: 1123px; /* Exact Fixed A4 Height preventing 2nd page creation */
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* Visual gap between pages in preview */
+  background: transparent;
+  flex-shrink: 0;
+}
+
+/* INDIVIDUAL A4 PAGE CONTAINER (Guarantees exact 1-page if <= 7 items, and multi-page with bg if > 7 items) */
+.doc-printable-page {
+  width: 794px;
+  height: 1123px;
+  min-height: 1123px;
   max-height: 1123px;
   overflow: hidden;
   flex-shrink: 0;
@@ -839,6 +850,12 @@ body.bg-soft {
   font-family: 'Mulish', sans-serif;
   position: relative;
   box-sizing: border-box;
+  page-break-after: always;
+  page-break-inside: avoid;
+}
+
+.doc-printable-page:last-child {
+  page-break-after: avoid;
 }
 
 /* ISOLATED CAPTURE CONTAINER STYLING ACCORDING TO EXACT INSTRUCTION */
@@ -847,7 +864,7 @@ body.bg-soft {
   top: 0;
   left: 0;
   width: 794px;
-  height: 1123px;
+  height: auto;
   overflow: hidden;
   background: #ffffff;
   z-index: -9999;
@@ -1113,8 +1130,6 @@ body.bg-soft {
     margin: 0 !important;
     padding: 0 !important;
     width: 210mm !important;
-    height: 297mm !important;
-    overflow: hidden !important;
   }
   .mobile-header, .recipient-header, .search-filter-row, .stats-card, .table-card, .fab-btn, .form-card, .modal-overlay, #status-badge-container, #signature-form-box, #thank-you-container, .form-actions {
     display: none !important;
@@ -1127,7 +1142,7 @@ body.bg-soft {
     width: 210mm !important;
     max-width: 210mm !important;
     border: none !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
   #pdf-hidden-capture-container {
     display: block !important;
@@ -1135,26 +1150,38 @@ body.bg-soft {
     left: 0 !important;
     top: 0 !important;
     width: 210mm !important;
-    height: 297mm !important;
     opacity: 1 !important;
     z-index: 99999 !important;
-    overflow: hidden !important;
     background: #ffffff !important;
   }
   .doc-printable-wrapper {
     width: 210mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    transform: none !important;
+    background: #ffffff !important;
+  }
+  .doc-printable-page {
+    width: 210mm !important;
     height: 297mm !important;
+    min-height: 297mm !important;
     max-height: 297mm !important;
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
     padding: 135px 48px 30px 48px !important;
     transform: none !important;
-    page-break-after: avoid !important;
+    page-break-after: always !important;
     page-break-inside: avoid !important;
     overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+  .doc-printable-page:last-child {
+    page-break-after: avoid !important;
   }
   .ji-bg-letterhead-img {
     display: block !important;
