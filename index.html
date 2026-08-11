@@ -21,6 +21,11 @@
 </head>
 <body class="mobile-app">
 
+  <!-- DATALIST SUGGESTION CONTAINERS FOR MASTER DATA SEARCHBAR -->
+  <datalist id="list-nama-penerima"></datalist>
+  <datalist id="list-kebutuhan-grup"></datalist>
+  <datalist id="list-keterangan"></datalist>
+
   <div class="app-shell">
     
     <!-- GLASSMORPHISM WHITE HEADER WITH REFRESH ICON BUTTON -->
@@ -185,7 +190,7 @@
               </div>
               <div class="form-group">
                 <label for="diterimaOleh">Diterima Oleh</label>
-                <input type="text" id="diterimaOleh" class="form-control highlight" placeholder="Nama Penerima" required>
+                <input type="text" id="diterimaOleh" list="list-nama-penerima" class="form-control highlight" placeholder="Cari / Ketik Nama Penerima..." autocomplete="off" required>
               </div>
             </div>
 
