@@ -1124,7 +1124,7 @@ function generateDocumentHTML(v) {
     </div>
   `;
 
-  // Render Continuation Pages (DIRECTLY CONTINUES DATA WITHOUT REPEATING TITLE & META DATA)
+  // Render Continuation Pages
   subsequentPages.forEach((subItems, subIdx) => {
     const isLast = subIdx === subsequentPages.length - 1;
     const startNum = itemsPerPageFirst + (subIdx * itemsPerPageSubsequent);
@@ -1221,7 +1221,7 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED ZERO-OFFSET PERFECT PDF RENDERER ====================
+// ==================== 6. GUARANTEED ZERO-SPILLOVER PERFECT PDF RENDERER ====================
 function downloadPDF(voucher, buttonEl) {
   if (!voucher) return;
   if (buttonEl && buttonEl.dataset.downloading === 'true') return;
@@ -1261,7 +1261,7 @@ function downloadPDF(voucher, buttonEl) {
   const targetEl = captureContainer.querySelector('.doc-printable-wrapper');
   const filename = `Tanda_Terima_Pembayaran_${(voucher.noReferensi || 'OUT0001').replace(/[\/\\]/g, '_')}.pdf`;
 
-  // html2canvas with locked x: 0 and y: 0 coordinates
+  // Explicit pagebreak mode avoiding spillover
   const opt = {
     margin:       0,
     filename:     filename,
@@ -1280,7 +1280,7 @@ function downloadPDF(voucher, buttonEl) {
       windowWidth: 794
     },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['css', 'legacy'] }
+    pagebreak:    { mode: ['css'], avoid: '.doc-printable-page' }
   };
 
   if (typeof html2pdf !== 'undefined') {
