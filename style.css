@@ -706,7 +706,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   A4 PREVIEW VIEWPORT & REAL DOM BACKGROUND IMAGE (100% HTML2CANVAS CAPTURE)
+   EXACT A4 DOKUMEN LAYOUT (14pt Title, 12pt Subtitle, 9pt Body, 1-Page Exact)
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -720,12 +720,14 @@ body.bg-soft {
 
 .doc-printable-wrapper {
   width: 794px; /* Native 96DPI A4 Width */
-  min-height: 1123px; /* Native 96DPI A4 Height */
+  height: 1123px; /* Exact Fixed A4 Height preventing 2nd page creation */
+  max-height: 1123px;
+  overflow: hidden;
   flex-shrink: 0;
   background-color: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: var(--radius-sm);
-  padding: 130px 48px 48px 48px; /* Reserves Kop Surat space from background */
+  padding: 155px 48px 40px 48px; /* Top padding 155px lowers title comfortably below kop */
   color: #000000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-family: 'Mulish', sans-serif;
@@ -749,16 +751,16 @@ body.bg-soft {
   z-index: 1;
 }
 
-/* DOCUMENT MAIN TITLE */
+/* DOCUMENT MAIN TITLE (14pt Title & 12pt Subtitle) */
 .ji-doc-title-block {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 .ji-main-title {
   font-family: 'Mulish', sans-serif;
   font-weight: 900;
-  font-size: 16px;
+  font-size: 14pt; /* Exact 14pt requested */
   color: #000000;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -766,18 +768,18 @@ body.bg-soft {
 
 .ji-sub-title {
   font-family: 'Martel', serif;
-  font-size: 13px;
+  font-size: 12pt; /* Exact 12pt requested */
   font-weight: 700;
   color: #333333;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
-/* META INFORMATION */
+/* META INFORMATION (9pt font size, justified alignment where applicable) */
 .ji-meta-lines {
-  font-size: 11.5px;
+  font-size: 9pt; /* Exact 9pt requested */
   color: #000000;
   margin-bottom: 16px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .ji-meta-row {
@@ -800,18 +802,18 @@ body.bg-soft {
 
 .ji-section-heading {
   font-weight: 800;
-  font-size: 11.5px;
+  font-size: 9.5pt;
   text-transform: uppercase;
   color: #000000;
   margin: 14px 0 6px 0;
   letter-spacing: 0.3px;
 }
 
-/* OFFICIAL RINCIAN PEMBAYARAN TABLE */
+/* OFFICIAL RINCIAN PEMBAYARAN TABLE (Center Center Cell Alignment, 9pt font) */
 .ji-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 11px;
+  font-size: 9pt; /* Exact 9pt requested */
   color: #000000;
   margin-bottom: 18px;
   border: 1px solid #000000;
@@ -819,44 +821,50 @@ body.bg-soft {
 
 .ji-table th {
   border: 1px solid #000000;
-  padding: 6px 8px;
+  padding: 8px 10px;
   font-weight: 700;
   background: #ffffff;
-  text-align: center;
+  text-align: center; /* Center cell alignment */
+  vertical-align: middle; /* Middle cell alignment */
 }
 
 .ji-table td {
   border: 1px solid #000000;
-  padding: 6px 8px;
-  vertical-align: top;
+  padding: 8px 10px;
+  text-align: center; /* Center cell alignment */
+  vertical-align: middle; /* Middle cell alignment */
 }
 
 .ji-table tfoot td {
   font-weight: 800;
   border-top: 1px solid #000000;
   background: #ffffff;
+  text-align: center; /* Center cell alignment */
+  vertical-align: middle; /* Middle cell alignment */
 }
 
-/* STATEMENTS SECTION */
+/* STATEMENTS SECTION (Justified Paragraphs, 9pt font) */
 .ji-statements-block {
-  font-size: 11px;
+  font-size: 9pt; /* Exact 9pt requested */
   color: #000000;
-  line-height: 1.55;
+  line-height: 1.6;
   margin-bottom: 24px;
+  text-align: justify; /* Justified paragraph */
 }
 
 .ji-statements-block p {
   margin-bottom: 8px;
+  text-align: justify; /* Justified paragraph */
 }
 
-/* SIGNATURES ROW */
+/* SIGNATURES ROW (Enlarged signature images to fill space) */
 .ji-signatures-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin-top: 30px;
+  margin-top: 28px;
   text-align: center;
-  font-size: 11.5px;
+  font-size: 9pt; /* Exact 9pt requested */
 }
 
 .ji-sig-box {
@@ -871,7 +879,7 @@ body.bg-soft {
 }
 
 .ji-sig-space {
-  height: 75px;
+  height: 90px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -880,7 +888,7 @@ body.bg-soft {
 }
 
 .ji-sig-img {
-  max-height: 70px;
+  max-height: 85px; /* Enlarged signature image */
   max-width: 100%;
   object-fit: contain;
 }
@@ -888,11 +896,11 @@ body.bg-soft {
 .ji-sig-name {
   font-weight: 800;
   color: #000000;
-  font-size: 12.5px;
+  font-size: 10pt;
 }
 
 .ji-sig-role {
-  font-size: 10.5px;
+  font-size: 8.5pt;
   color: #444444;
 }
 
@@ -973,7 +981,7 @@ body.bg-soft {
 .text-center { text-align: center; }
 
 /* ==========================================================================
-   PRINT-ONLY HIGH RESOLUTION A4 STYLES (CLEAN PDF PRINT WITH FULL BACKGROUND)
+   PRINT-ONLY HIGH RESOLUTION A4 STYLES (EXACT 1-PAGE A4 PRINT)
    ========================================================================== */
 @media print {
   @page {
@@ -986,7 +994,7 @@ body.bg-soft {
     padding: 0 !important;
     width: 210mm !important;
     height: 297mm !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -1001,18 +1009,20 @@ body.bg-soft {
     width: 210mm !important;
     max-width: 210mm !important;
     border: none !important;
-    overflow: visible !important;
+    overflow: hidden !important;
   }
   .doc-printable-wrapper {
     width: 210mm !important;
-    min-height: 297mm !important;
+    height: 297mm !important;
+    max-height: 297mm !important;
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 130px 48px 48px 48px !important;
+    padding: 155px 48px 40px 48px !important;
     transform: none !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
+    overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
