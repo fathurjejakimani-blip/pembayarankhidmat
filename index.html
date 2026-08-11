@@ -234,28 +234,29 @@
       </div>
     </div>
 
-    <!-- MODAL SHARE LINK -->
+    <!-- MODAL SHARE LINK (WITH WHATSAPP SHARE BUTTON) -->
     <div id="modal-share-overlay" class="modal-overlay hidden">
-      <div class="modal-card">
-        <div class="modal-icon"><i class="fa-solid fa-share-nodes"></i></div>
-        <h3>Link Dokumen Siap!</h3>
-        <p>Bagikan link ini khusus kepada penerima untuk ditandatangani:</p>
-        
-        <div class="share-box">
-          <input type="text" id="share-link-input" readonly class="form-control font-mono">
-          <button type="button" id="btn-copy-share" class="btn btn-navy"><i class="fa-solid fa-copy"></i> Salin</button>
+      <div class="modal-card share-modal-card">
+        <div class="modal-header-row">
+          <div class="share-icon-circle"><i class="fa-solid fa-share-nodes"></i></div>
+          <button type="button" id="btn-close-share-x" class="btn-icon-close">&times;</button>
         </div>
 
-        <!-- CUSTOM DOMAIN INPUT FOR RECIPIENT PORTAL -->
-        <div class="form-group margin-top-sm" style="background: #f1f5f9; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
-          <label for="custom-domain-input" style="font-size: 9.5px; color: #475569; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; display: block;">
-            Custom Domain Portal Penerima (Opsional):
-          </label>
-          <input type="text" id="custom-domain-input" placeholder="https://ttd.jejakimani.com" class="form-control font-mono" style="font-size: 11px;">
+        <h3 class="share-title">Link Dokumen Siap!</h3>
+        <p class="share-desc">Bagikan link ini khusus kepada penerima untuk ditandatangani:</p>
+
+        <div class="share-input-group">
+          <input type="text" id="share-link-input" readonly class="form-control font-mono share-link-input">
+          <button type="button" id="btn-copy-share" class="btn btn-navy btn-copy"><i class="fa-solid fa-copy"></i> Salin</button>
         </div>
 
-        <div class="modal-buttons margin-top">
-          <a id="btn-open-recipient" href="#" target="_blank" class="btn btn-outline btn-block">Buka Portal Penerima <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        <div class="modal-actions-grid">
+          <a id="btn-share-wa" href="#" target="_blank" class="btn btn-whatsapp btn-block">
+            <i class="fa-brands fa-whatsapp"></i> Kirim Pesan via WhatsApp
+          </a>
+          <a id="btn-open-recipient" href="#" target="_blank" class="btn btn-outline btn-block">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Portal Penerima
+          </a>
           <button type="button" id="btn-close-share" class="btn btn-navy btn-block">Tutup</button>
         </div>
       </div>
@@ -276,7 +277,7 @@
         <div class="sheet-body doc-preview-body">
           <div class="a4-preview-viewport">
             <div id="pdf-doc-content" class="doc-printable-wrapper">
-              <!-- Rendered voucher document -->
+              <!-- Rendered voucher document for preview screen -->
             </div>
           </div>
         </div>
