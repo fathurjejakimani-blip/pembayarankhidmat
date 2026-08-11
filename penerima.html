@@ -16,8 +16,8 @@
   <!-- html2pdf.js for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="style.css">
+  <!-- Custom CSS (Root-relative path to load style.css on Vercel clean URL routes like /doc/:id) -->
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body class="mobile-app bg-soft">
 
@@ -26,7 +26,7 @@
     <!-- GLASSMORPHISM WHITE HEADER WITH STATUS PILL BADGE -->
     <header class="recipient-header">
       <div class="header-content">
-        <img src="logo-jejakimani.png" alt="Jejak Imani Logo" class="header-logo-raw">
+        <img src="/logo-jejakimani.png" alt="Jejak Imani Logo" class="header-logo-raw">
         <div>
           <h1>Tanda Terima Pembayaran</h1>
           <p>Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</p>
@@ -138,6 +138,6 @@
 
   </div>
 
-  <script src="app.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
