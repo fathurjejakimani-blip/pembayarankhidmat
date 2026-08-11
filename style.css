@@ -811,7 +811,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   PERFECT OPTIMIZED A4 CONTAINER SYSTEM (ZERO PAGE 3 OVERFLOW)
+   PERFECT BALANCED A4 CONTAINER SYSTEM (ZERO COLLISION, ZERO SPILLOVER)
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -841,7 +841,7 @@ body.bg-soft {
   flex-shrink: 0;
 }
 
-/* INDIVIDUAL A4 PAGE CONTAINER OPTIMIZED FOR ZERO OVERFLOW */
+/* INDIVIDUAL A4 PAGE CONTAINER OPTIMIZED FOR ZERO COLLISION */
 .doc-printable-page {
   width: 794px !important;
   height: 1120px !important;
@@ -968,7 +968,7 @@ body.bg-soft {
 
 .ji-table th {
   border: 1px solid #000000;
-  padding: 6px 8px;
+  padding: 7px 8px;
   font-weight: 700;
   background: #ffffff;
   text-align: center;
@@ -977,7 +977,8 @@ body.bg-soft {
 
 .ji-table td {
   border: 1px solid #000000;
-  padding: 6px 8px;
+  padding: 7px 8px;
+  line-height: 1.4;
   vertical-align: middle;
 }
 
@@ -1003,7 +1004,7 @@ body.bg-soft {
   text-align: justify;
 }
 
-/* SIGNATURES ROW OPTIMIZED FOR ZERO OVERFLOW */
+/* SIGNATURES ROW OPTIMIZED FOR BALANCED LAYOUT */
 .ji-signatures-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
