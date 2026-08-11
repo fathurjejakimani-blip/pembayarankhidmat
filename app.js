@@ -86,7 +86,7 @@ let isLoadingSheets = false;
 let bgLetterheadBase64 = '';
 let ttdDiserahkanBase64 = '';
 
-// Preload Images to Base64 Data URLs
+// Preload Images to Base64 Data URLs using root-relative paths
 function preloadImagesAsBase64() {
   const loadAsBase64 = (url, callback) => {
     const img = new Image();
@@ -107,8 +107,8 @@ function preloadImagesAsBase64() {
     img.src = url;
   };
 
-  loadAsBase64('bg-letterhead.png', (b64) => { bgLetterheadBase64 = b64; });
-  loadAsBase64('ttd-diserahkan.png', (b64) => { ttdDiserahkanBase64 = b64; });
+  loadAsBase64('/bg-letterhead.png', (b64) => { bgLetterheadBase64 = b64; });
+  loadAsBase64('/ttd-diserahkan.png', (b64) => { ttdDiserahkanBase64 = b64; });
 }
 
 // DOM Initialization
@@ -116,16 +116,24 @@ document.addEventListener('DOMContentLoaded', () => {
   preloadImagesAsBase64();
   updateDatalists();
 
-  const isRecipientPage = window.location.pathname.endsWith('penerima.html') || window.location.href.includes('penerima.html');
+  const isRecipientPage = window.location.pathname.endsWith('penerima.html') || window.location.href.includes('penerima.html') || window.location.pathname.includes('/doc/');
   const urlParams = new URLSearchParams(window.location.search);
-  const voucherId = urlParams.get('id');
+  
+  // Extract ID from query param OR path (/doc/OUT0004)
+  let voucherId = urlParams.get('id');
+  if (!voucherId && window.location.pathname.includes('/doc/')) {
+    const parts = window.location.pathname.split('/doc/');
+    if (parts.length > 1) {
+      voucherId = parts[1].replace(/\/$/, '');
+    }
+  }
 
   setupGlobalEventDelegation();
   setup2FingerPinchZoom();
 
   if (isRecipientPage) {
     if (voucherId) {
-      currentVoucher = vouchers.find(v => v.id === voucherId);
+      currentVoucher = vouchers.find(v => v.id === voucherId || v.noReferensi === voucherId);
       if (currentVoucher) {
         renderRecipientView(currentVoucher);
       } else {
@@ -273,9 +281,16 @@ async function fetchFromGoogleSheets() {
     updateStats();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const voucherId = urlParams.get('id');
+    let voucherId = urlParams.get('id');
+    if (!voucherId && window.location.pathname.includes('/doc/')) {
+      const parts = window.location.pathname.split('/doc/');
+      if (parts.length > 1) {
+        voucherId = parts[1].replace(/\/$/, '');
+      }
+    }
+
     if (voucherId) {
-      const v = vouchers.find(x => x.id === voucherId);
+      const v = vouchers.find(x => x.id === voucherId || x.noReferensi === voucherId);
       if (v) renderRecipientView(v);
     }
   }
@@ -566,7 +581,6 @@ function resetFormToCleanState() {
   const rincianList = document.getElementById('rincian-list');
   if (rincianList) {
     rincianList.innerHTML = '';
-    // Single 100% blank initial rincian row
     addRincianItem('', '', '');
   }
   calculateTotal();
@@ -748,7 +762,7 @@ function showPreviewModal(voucher) {
 
 // ==================== 2. RECIPIENT PORTAL LOGIC ====================
 function initRecipientPortal(id) {
-  currentVoucher = vouchers.find(v => v.id === id);
+  currentVoucher = vouchers.find(v => v.id === id || v.noReferensi === id);
   if (currentVoucher) {
     renderRecipientView(currentVoucher);
   } else {
@@ -928,8 +942,8 @@ function generateDocumentHTML(v) {
     </tr>
   `).join('');
 
-  const bgSrc = bgLetterheadBase64 || 'bg-letterhead.png';
-  const ttdDiserahkanSrc = ttdDiserahkanBase64 || 'ttd-diserahkan.png';
+  const bgSrc = bgLetterheadBase64 || '/bg-letterhead.png';
+  const ttdDiserahkanSrc = ttdDiserahkanBase64 || '/ttd-diserahkan.png';
 
   return `
     <img src="${bgSrc}" alt="Letterhead Background" class="ji-bg-letterhead-img">
