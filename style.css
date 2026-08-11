@@ -805,7 +805,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   A4 PREVIEW FRAME & DYNAMIC MULTI-PAGE A4 CONTAINER SYSTEM
+   PERFECT SYMMETRICAL A4 PREVIEW & PDF CONTAINER SYSTEM
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -828,12 +828,11 @@ body.bg-soft {
   width: 794px; /* Native 96DPI A4 Width */
   display: flex;
   flex-direction: column;
-  gap: 24px; /* Visual gap between pages in preview */
   background: transparent;
   flex-shrink: 0;
 }
 
-/* INDIVIDUAL A4 PAGE CONTAINER (Guarantees exact 1-page if <= 7 items, and multi-page with bg if > 7 items) */
+/* INDIVIDUAL A4 PAGE CONTAINER */
 .doc-printable-page {
   width: 794px;
   height: 1123px;
@@ -850,15 +849,14 @@ body.bg-soft {
   font-family: 'Mulish', sans-serif;
   position: relative;
   box-sizing: border-box;
-  page-break-after: always;
   page-break-inside: avoid;
 }
 
-.doc-printable-page:last-child {
-  page-break-after: avoid;
+.doc-printable-page.page-subsequent {
+  padding-top: 135px; /* Same letterhead Kop top clearance */
 }
 
-/* ISOLATED CAPTURE CONTAINER STYLING ACCORDING TO EXACT INSTRUCTION */
+/* ISOLATED CAPTURE CONTAINER STYLING */
 #pdf-hidden-capture-container {
   position: fixed;
   top: 0;
@@ -897,7 +895,7 @@ body.bg-soft {
 .ji-main-title {
   font-family: 'Mulish', sans-serif;
   font-weight: 900;
-  font-size: 14pt; /* Exact 14pt requested */
+  font-size: 14pt;
   color: #000000;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -905,15 +903,15 @@ body.bg-soft {
 
 .ji-sub-title {
   font-family: 'Martel', serif;
-  font-size: 12pt; /* Exact 12pt requested */
+  font-size: 12pt;
   font-weight: 700;
   color: #333333;
   margin-top: 4px;
 }
 
-/* META INFORMATION (9pt font size, justified alignment where applicable) */
+/* META INFORMATION (9pt font size) */
 .ji-meta-lines {
-  font-size: 9pt; /* Exact 9pt requested */
+  font-size: 9pt;
   color: #000000;
   margin-bottom: 16px;
   line-height: 1.6;
@@ -950,7 +948,7 @@ body.bg-soft {
 .ji-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 9pt; /* Exact 9pt requested */
+  font-size: 9pt;
   color: #000000;
   margin-bottom: 18px;
   border: 1px solid #000000;
@@ -982,7 +980,7 @@ body.bg-soft {
 
 /* STATEMENTS SECTION (Justified Paragraphs, 9pt font) */
 .ji-statements-block {
-  font-size: 9pt; /* Exact 9pt requested */
+  font-size: 9pt;
   color: #000000;
   line-height: 1.6;
   margin-bottom: 24px;
@@ -999,9 +997,9 @@ body.bg-soft {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin-top: 28px;
+  margin-top: 24px;
   text-align: center;
-  font-size: 9pt; /* Exact 9pt requested */
+  font-size: 9pt;
 }
 
 .ji-sig-box {
@@ -1012,11 +1010,11 @@ body.bg-soft {
 
 .ji-sig-label {
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .ji-sig-space {
-  height: 90px;
+  height: 85px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1025,7 +1023,7 @@ body.bg-soft {
 }
 
 .ji-sig-img {
-  max-height: 85px; /* Enlarged signature image */
+  max-height: 80px;
   max-width: 100%;
   object-fit: contain;
 }
@@ -1160,7 +1158,6 @@ body.bg-soft {
     border: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    gap: 0 !important;
     transform: none !important;
     background: #ffffff !important;
   }
@@ -1174,14 +1171,10 @@ body.bg-soft {
     margin: 0 !important;
     padding: 135px 48px 30px 48px !important;
     transform: none !important;
-    page-break-after: always !important;
     page-break-inside: avoid !important;
     overflow: hidden !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
-  .doc-printable-page:last-child {
-    page-break-after: avoid !important;
   }
   .ji-bg-letterhead-img {
     display: block !important;
