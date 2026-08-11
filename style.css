@@ -811,7 +811,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   PERFECT SYMMETRICAL A4 PREVIEW & PDF CONTAINER SYSTEM
+   PERFECT ZERO-OFFSET A4 PREVIEW & PDF CONTAINER SYSTEM
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -831,8 +831,9 @@ body.bg-soft {
 }
 
 .doc-printable-wrapper {
-  width: 794px !important; /* Fixed Native 96DPI A4 Width */
-  margin: 0 auto !important;
+  width: 794px !important;
+  margin: 0 !important;
+  padding: 0 !important;
   transform: none !important;
   display: flex;
   flex-direction: column;
@@ -840,7 +841,7 @@ body.bg-soft {
   flex-shrink: 0;
 }
 
-/* INDIVIDUAL A4 PAGE CONTAINER */
+/* INDIVIDUAL A4 PAGE CONTAINER (Zero margin to prevent html2canvas origin shift) */
 .doc-printable-page {
   width: 794px !important;
   height: 1123px !important;
@@ -850,21 +851,21 @@ body.bg-soft {
   flex-shrink: 0;
   background-color: #ffffff;
   border: none;
-  padding: 135px 45px 30px 45px; /* Top clearance places title below kop background */
+  padding: 135px 45px 30px 45px;
   color: #000000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-family: 'Mulish', sans-serif;
   position: relative;
   box-sizing: border-box;
   page-break-inside: avoid;
-  margin: 0 auto !important;
+  margin: 0 !important;
 }
 
 .doc-printable-page.page-subsequent {
   padding-top: 135px;
 }
 
-/* ISOLATED CAPTURE CONTAINER STYLING */
+/* ISOLATED CAPTURE CONTAINER STYLING (ZERO MARGIN / ZERO PADDING FOR EXACT ORIGIN (0,0)) */
 #pdf-hidden-capture-container {
   position: fixed;
   top: 0;
@@ -876,6 +877,8 @@ body.bg-soft {
   z-index: -9999;
   opacity: 0.01;
   pointer-events: none;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .ji-bg-letterhead-img {
@@ -1159,6 +1162,8 @@ body.bg-soft {
     opacity: 1 !important;
     z-index: 99999 !important;
     background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   .doc-printable-wrapper {
     width: 210mm !important;
