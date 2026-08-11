@@ -975,14 +975,14 @@ function checkCanSubmit() {
   }
 }
 
-// ==================== 4. BALANCED MULTI-PAGE ROW BUILDER ====================
+// ==================== 4. COMPACT & BALANCED MULTI-PAGE ROW BUILDER ====================
 function getRincianItemWeight(item) {
   const maxLen = Math.max(
     (item.kebutuhanGrup || '').length,
     (item.keterangan || '').length
   );
-  if (maxLen > 80) return 2;
-  if (maxLen >= 40) return 1.5;
+  if (maxLen > 80) return 1.8;
+  if (maxLen >= 40) return 1.3;
   return 1;
 }
 
@@ -996,9 +996,9 @@ function chunkRincianItemsSmart(rincianList) {
     const item = rincianList[i];
     const weight = getRincianItemWeight(item);
     
-    // Page 1 capacity: 7.5 points (fits 5-6 items cleanly without any row overlap/collision)
-    // Page 2+ capacity: 13 points (fits up to 10-11 items on Page 2 alongside signatures, preventing item 14 from spilling over to Page 3!)
-    const maxCapacity = isFirstPage ? 7.5 : 13;
+    // Page 1 capacity: 9.5 points (fits up to 7-8 items comfortably with tight padding)
+    // Page 2+ capacity: 15 points (fits up to 12-14 items comfortably alongside signatures)
+    const maxCapacity = isFirstPage ? 9.5 : 15;
 
     if (currentPoints + weight > maxCapacity && currentPage.length > 0) {
       pages.push(currentPage);
