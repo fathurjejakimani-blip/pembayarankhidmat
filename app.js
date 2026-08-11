@@ -206,7 +206,7 @@ function showLoadingRecipientState() {
   }
 }
 
-// INTELLIGENT PARSER FOR RINCIAN ITEMS (PARSES (SAR XXX), REMOVES DUMMY 'Rincian Pengeluaran', SEPARATES COLUMNS)
+// INTELLIGENT PARSER FOR RINCIAN ITEMS
 function cleanAndParseRincianItem(item, fallbackNominal = 0) {
   let keb = (item.kebutuhanGrup || '').trim();
   let ket = (item.keterangan || '').trim();
@@ -361,7 +361,7 @@ function mergeVouchers(sheetsList, localList) {
   return Array.from(map.values());
 }
 
-// GLOBAL EVENT DELEGATION (GUARANTEES 100% RELIABLE BUTTON CLICKS)
+// GLOBAL EVENT DELEGATION WITH DOUBLE-CLICK PROTECTION & SPINNER INDICATOR
 function setupGlobalEventDelegation() {
   document.addEventListener('click', (e) => {
     const target = e.target.closest('#btn-open-canvas-modal, #btn-close-canvas-modal, #btn-save-canvas-modal, #btn-download-pdf-recipient, #btn-download-pdf-admin');
@@ -394,7 +394,7 @@ function setupGlobalEventDelegation() {
     } else if (target.id === 'btn-download-pdf-recipient' || target.id === 'btn-download-pdf-admin') {
       const targetVoucher = currentVoucher || selectedVoucher || vouchers[0];
       if (targetVoucher) {
-        downloadPDF(targetVoucher);
+        downloadPDF(targetVoucher, target);
       }
     }
   });
@@ -600,9 +600,9 @@ function initAdminPortal() {
     }
   };
 
-  document.getElementById('btn-act-download').onclick = () => {
+  document.getElementById('btn-act-download').onclick = (e) => {
     if (selectedVoucher) {
-      downloadPDF(selectedVoucher);
+      downloadPDF(selectedVoucher, e.currentTarget);
     }
   };
 
@@ -892,8 +892,8 @@ function renderRecipientView(v) {
 
   const btnDownloadRec = document.getElementById('btn-download-pdf-recipient');
   if (btnDownloadRec) {
-    btnDownloadRec.onclick = () => {
-      downloadPDF(currentVoucher);
+    btnDownloadRec.onclick = (e) => {
+      downloadPDF(currentVoucher, e.currentTarget);
     };
   }
 }
@@ -1221,9 +1221,26 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED 100% PERFECT SYMMETRICAL PDF RENDERER ====================
-function downloadPDF(voucher, callback) {
+// ==================== 6. GUARANTEED SINGLE-DOWNLOAD & PROTECTED PDF RENDERER ====================
+function downloadPDF(voucher, buttonEl) {
   if (!voucher) return;
+  if (buttonEl && buttonEl.dataset.downloading === 'true') return;
+
+  let originalHtml = '';
+  if (buttonEl) {
+    buttonEl.dataset.downloading = 'true';
+    originalHtml = buttonEl.innerHTML;
+    buttonEl.disabled = true;
+    buttonEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses PDF A4...`;
+  }
+
+  const resetBtn = () => {
+    if (buttonEl) {
+      buttonEl.dataset.downloading = 'false';
+      buttonEl.disabled = false;
+      buttonEl.innerHTML = originalHtml;
+    }
+  };
 
   let captureContainer = document.getElementById('pdf-hidden-capture-container');
   if (!captureContainer) {
@@ -1263,43 +1280,22 @@ function downloadPDF(voucher, callback) {
     pagebreak:    { mode: ['css', 'legacy'] }
   };
 
-  let pdfDone = false;
-
-  const cleanup = () => {
-    captureContainer.innerHTML = '';
-    if (callback) callback();
-  };
-
   if (typeof html2pdf !== 'undefined') {
-    try {
-      html2pdf().set(opt).from(targetEl).save().then(() => {
-        pdfDone = true;
-        cleanup();
-      }).catch(err => {
-        console.log('html2pdf notice:', err);
-        if (!pdfDone) {
-          pdfDone = true;
-          window.print();
-          cleanup();
-        }
+    html2pdf().set(opt).from(targetEl).save()
+      .then(() => {
+        captureContainer.innerHTML = '';
+        resetBtn();
+      })
+      .catch((err) => {
+        console.error('html2pdf error:', err);
+        captureContainer.innerHTML = '';
+        resetBtn();
       });
-    } catch (e) {
-      console.log('html2pdf exception:', e);
-      window.print();
-      cleanup();
-    }
   } else {
-    window.print();
-    cleanup();
+    alert('Library PDF belum siap, mohon refresh halaman.');
+    captureContainer.innerHTML = '';
+    resetBtn();
   }
-
-  setTimeout(() => {
-    if (!pdfDone) {
-      pdfDone = true;
-      window.print();
-      cleanup();
-    }
-  }, 750);
 }
 
 // ==================== 7. HELPER UTILITIES ====================
