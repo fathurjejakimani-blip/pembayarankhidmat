@@ -3,7 +3,8 @@
    ========================================================================== */
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3A7kYSe8LnYmNmVyqGzNAG78oeTj5Uqff41pbK4NKfM2UDUYZnuceYEp0LEKzanFllQ/exec';
-const STORAGE_KEY = 'bukti_pembayaran_jejakimani_v14';
+const STORAGE_KEY = 'bukti_pembayaran_jejakimani_v16';
+const DOMAIN_KEY = 'custom_recipient_domain_v1';
 
 // Initial Sample Voucher matching exact PDF sample
 const SAMPLE_VOUCHERS = [
@@ -52,8 +53,27 @@ document.addEventListener('DOMContentLoaded', () => {
     initRecipientPortal(voucherId);
   } else {
     initAdminPortal();
+    fetchFromGoogleSheets();
   }
 });
+
+// REAL-TIME SYNC FROM GOOGLE SHEETS
+async function fetchFromGoogleSheets() {
+  try {
+    const res = await fetch(`${SCRIPT_URL}?action=get`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        vouchers = data;
+        saveVouchersLocal();
+        renderVouchersTable(vouchers);
+        updateStats();
+      }
+    }
+  } catch (err) {
+    console.log('Google Sheets Sync notice:', err);
+  }
+}
 
 // GLOBAL EVENT DELEGATION (GUARANTEES 100% RELIABLE BUTTON CLICKS)
 function setupGlobalEventDelegation() {
@@ -150,11 +170,20 @@ function initAdminPortal() {
   const searchInput = document.getElementById('search-input');
   const filterSelect = document.getElementById('filter-select');
   const btnRefresh = document.getElementById('btn-refresh-header');
+  const customDomainInput = document.getElementById('custom-domain-input');
 
   document.getElementById('noReferensi').value = `OUT000${vouchers.length + 1}`;
   document.getElementById('tanggal').value = new Date().toISOString().split('T')[0];
 
   initRincianInputs();
+
+  if (customDomainInput) {
+    customDomainInput.value = localStorage.getItem(DOMAIN_KEY) || '';
+    customDomainInput.addEventListener('input', () => {
+      localStorage.setItem(DOMAIN_KEY, customDomainInput.value.trim());
+      if (selectedVoucher) showShareModal(selectedVoucher);
+    });
+  }
 
   // Header Refresh Button Logic
   if (btnRefresh) {
@@ -162,13 +191,11 @@ function initAdminPortal() {
       const icon = btnRefresh.querySelector('i');
       if (icon) icon.classList.add('spinning');
 
-      vouchers = JSON.parse(localStorage.getItem(STORAGE_KEY)) || SAMPLE_VOUCHERS;
-      renderVouchersTable(vouchers);
-      updateStats();
-
-      setTimeout(() => {
-        if (icon) icon.classList.remove('spinning');
-      }, 650);
+      fetchFromGoogleSheets().then(() => {
+        setTimeout(() => {
+          if (icon) icon.classList.remove('spinning');
+        }, 650);
+      });
     };
   }
 
@@ -423,9 +450,15 @@ function openRowActionsModal(v) {
 }
 
 function showShareModal(voucher) {
-  const recipientUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}penerima.html?id=${voucher.id}`;
+  selectedVoucher = voucher;
+  const customDomain = localStorage.getItem(DOMAIN_KEY);
+  const baseDomain = customDomain ? customDomain.replace(/\/$/, '') : window.location.origin;
+
+  const recipientUrl = `${baseDomain}/doc/${voucher.id}`;
+  const directUrl = `${window.location.origin}${window.location.pathname.replace('index.html', '')}penerima.html?id=${voucher.id}`;
+  
   document.getElementById('share-link-input').value = recipientUrl;
-  document.getElementById('btn-open-recipient').href = recipientUrl;
+  document.getElementById('btn-open-recipient').href = directUrl;
   document.getElementById('modal-share-overlay').classList.remove('hidden');
 }
 
@@ -466,9 +499,10 @@ function initRecipientPortal(id) {
     container.innerHTML = generateDocumentHTML(currentVoucher);
   }
 
+  // Icon only status in header when signed
   if (currentVoucher.status === 'Sudah Ditandatangani') {
     if (statusBadgeContainer) {
-      statusBadgeContainer.innerHTML = `<span class="pill-badge signed"><i class="fa-solid fa-circle-check"></i> Sudah Ditandatangani</span>`;
+      statusBadgeContainer.innerHTML = `<span class="pill-badge signed" title="Sudah Ditandatangani"><i class="fa-solid fa-circle-check"></i></span>`;
     }
     if (formBox) formBox.classList.add('hidden');
     if (thankYouBox) thankYouBox.classList.remove('hidden');
@@ -752,51 +786,53 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED 1-PAGE EXACT A4 PDF GENERATOR ====================
+// ==================== 6. ISOLATED FIXED 794x1123 PDF RENDERER (UNIFIED EVERYWHERE) ====================
 function downloadPDF(voucher, callback) {
   if (!voucher) return;
 
-  let element = document.getElementById('pdf-doc-content');
-  if (!element) return;
-  element.innerHTML = generateDocumentHTML(voucher);
-
-  // Reset any zoom transform during capture to avoid space margin issues
-  const originalTransform = element.style.transform;
-  element.style.transform = 'none';
-
-  const previewModal = document.getElementById('modal-preview-overlay');
-  const isHiddenModal = previewModal && previewModal.classList.contains('hidden');
-  if (isHiddenModal) {
-    previewModal.style.visibility = 'hidden';
-    previewModal.classList.remove('hidden');
+  // Create or get isolated hidden off-screen container fixed to exactly 794px x 1123px A4
+  let captureContainer = document.getElementById('pdf-hidden-capture-container');
+  if (!captureContainer) {
+    captureContainer = document.createElement('div');
+    captureContainer.id = 'pdf-hidden-capture-container';
+    captureContainer.style.cssText = 'position: fixed; left: 0; top: 0; width: 794px; height: 1123px; z-index: -9999; opacity: 1; visibility: visible; overflow: hidden; pointer-events: none; background: #ffffff;';
+    document.body.appendChild(captureContainer);
   }
 
-  let pdfDone = false;
+  captureContainer.innerHTML = `<div class="doc-printable-wrapper">${generateDocumentHTML(voucher)}</div>`;
 
-  const finishProcess = () => {
-    element.style.transform = originalTransform;
-    if (isHiddenModal && previewModal) {
-      previewModal.classList.add('hidden');
-      previewModal.style.visibility = '';
-    }
-    if (callback) callback();
-  };
-
+  const elementToCapture = captureContainer.querySelector('.doc-printable-wrapper');
   const filename = `Tanda_Terima_Pembayaran_${(voucher.noReferensi || 'OUT0001').replace(/[\/\\]/g, '_')}.pdf`;
 
   const opt = {
     margin:       0,
     filename:     filename,
     image:        { type: 'jpeg', quality: 0.98 },
-    html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
+    html2canvas:  { 
+      scale: 2, 
+      useCORS: true, 
+      allowTaint: true, 
+      backgroundColor: '#ffffff', 
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      width: 794,
+      height: 1123
+    },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
-  // Attempt html2pdf
+  let pdfDone = false;
+
+  const finishProcess = () => {
+    captureContainer.innerHTML = '';
+    if (callback) callback();
+  };
+
   if (typeof html2pdf !== 'undefined') {
     try {
-      html2pdf().set(opt).from(element).save().then(() => {
+      html2pdf().set(opt).from(elementToCapture).save().then(() => {
         pdfDone = true;
         finishProcess();
       }).catch(err => {
@@ -817,7 +853,6 @@ function downloadPDF(voucher, callback) {
     finishProcess();
   }
 
-  // Safety timer for local file:/// protocol when html2canvas image loading hangs
   setTimeout(() => {
     if (!pdfDone) {
       pdfDone = true;
