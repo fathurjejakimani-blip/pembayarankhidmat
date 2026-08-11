@@ -13,7 +13,7 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- html2pdf.js -->
+  <!-- html2pdf.js for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
   <!-- Custom CSS -->
@@ -23,7 +23,7 @@
 
   <div class="recipient-shell">
     
-    <!-- RECIPIENT TOP BAR WITH SMALL ROUNDED PILL STATUS BADGE -->
+    <!-- GLASSMORPHISM WHITE HEADER WITH STATUS PILL BADGE -->
     <header class="recipient-header">
       <div class="header-content">
         <img src="logo-jejakimani.png" alt="Jejak Imani Logo" class="header-logo-raw">
@@ -37,113 +37,105 @@
       </div>
     </header>
 
+    <!-- MAIN BODY CONTAINER -->
     <main class="recipient-body">
       
-      <!-- PRINTABLE VOUCHER DOCUMENT CONTAINER WITH 2-FINGER PINCH ZOOM SUPPORT -->
-      <div class="a4-preview-viewport" id="preview-viewport-recipient">
+      <!-- A4 DOCUMENT PREVIEW VIEWPORT WITH TOUCH PINCH-ZOOM -->
+      <div class="a4-preview-viewport margin-bottom">
         <div id="pdf-doc-content" class="doc-printable-wrapper">
-          <!-- Injected via app.js -->
+          <!-- Document HTML injected via app.js -->
         </div>
       </div>
 
-      <!-- RECIPIENT SIGNATURE & AGREEMENT FORM (COMPACT & TIDY) -->
-      <div id="signature-form-box" class="form-card compact-card margin-top">
-        <div class="form-card-header compact-header">
-          <h2><i class="fa-solid fa-file-signature text-navy"></i> Form Persetujuan & Tanda Tangan</h2>
+      <!-- WIDGET FORM PERSETUJUAN & TANDA TANGAN -->
+      <div id="signature-form-box" class="compact-card table-card shadow-sm hidden">
+        <div class="table-card-header compact-header">
+          <h2><i class="fa-solid fa-file-signature text-navy"></i> Form Persetujuan & TTD</h2>
         </div>
 
-        <form id="recipient-form" class="form-card-body compact-body">
-          
-          <!-- MANDATED AGREEMENT CHECKBOX (JUSTIFIED PARAGRAPH) -->
-          <div class="agreement-box compact-agreement">
-            <label class="custom-checkbox">
-              <input type="checkbox" id="chk-agreement" required>
-              <span class="checkbox-label text-justify">
-                <strong class="text-navy">Persetujuan:</strong>
-                Bahwa Pihak Pertama telah menyerahkan dana dengan total nominal tersebut diatas kepada Pihak Kedua. Pihak Kedua menyatakan telah menerima dana tersebut secara lengkap dan benar sesuai dengan rincian pengeluaran di atas untuk alokasi operasional saudi.
-              </span>
-            </label>
-          </div>
-
-          <!-- SIGNATURE TRIGGER BUTTON -->
-          <div class="signature-trigger-box margin-top-sm">
-            <button type="button" id="btn-open-canvas-modal" class="btn btn-gold btn-block">
-              <i class="fa-solid fa-pen-nib"></i> Buka Canvas Tanda Tangan
-            </button>
-            
-            <div id="sig-preview-status" class="text-center margin-top-xs">
-              <!-- Status text updated via JS -->
+        <div class="compact-body">
+          <form id="recipient-form">
+            <!-- CHECKBOX PERSETUJUAN (JUSTIFIED PARAGRAPH) -->
+            <div class="form-group compact-agreement">
+              <label class="checkbox-container text-justify">
+                <input type="checkbox" id="chk-agreement" required>
+                <span class="checkmark"></span>
+                <span>Saya menyatakan telah menerima dana tersebut secara lengkap dan benar sesuai dengan rincian di atas.</span>
+              </label>
             </div>
-          </div>
 
-          <!-- SUBMIT BUTTON -->
-          <button type="submit" id="btn-submit-sig" class="btn btn-navy btn-block margin-top-sm" disabled>
-            <i class="fa-solid fa-check-double"></i> Simpan & Setujui Pembayaran
-          </button>
+            <!-- BUTTON FOR ENLARGED CANVAS SIGNATURE POPUP -->
+            <div class="form-group margin-top-xs">
+              <button type="button" id="btn-open-canvas-modal" class="btn btn-outline btn-block btn-sm">
+                <i class="fa-solid fa-pen-nib text-navy"></i> Buka Canvas Tanda Tangan
+              </button>
+              <div id="sig-preview-status" class="margin-top-xs text-center"></div>
+            </div>
 
-        </form>
+            <!-- SUBMIT BUTTON -->
+            <div class="form-actions margin-top-sm">
+              <button type="submit" id="btn-submit-sig" class="btn btn-navy btn-block" disabled>
+                <i class="fa-solid fa-check-circle"></i> Setujui & Tanda Tangan
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
 
-      <!-- THANK YOU & DOWNLOAD SECTION (CLEAN WITHOUT EXTRA ICONS) -->
-      <div id="thank-you-container" class="form-card compact-card margin-top text-center hidden">
-        <div class="form-card-body space-y">
-          <h2 class="thank-you-title">Terima Kasih!</h2>
-          <p class="thank-you-subtitle">Dokumen Bukti Pembayaran telah berhasil Anda tandatangani dan disetujui secara resmi.</p>
+      <!-- CLEAN THANK YOU & DOWNLOAD SECTION -->
+      <div id="thank-you-container" class="compact-card table-card shadow-sm hidden text-center">
+        <h2 class="thank-you-title">Terima Kasih!</h2>
+        <p class="thank-you-subtitle">Dokumen ini telah disetujui dan ditandatangani secara elektronik.</p>
+        
+        <div class="thank-you-info-text">
+          Dokumen bukti pembayaran sah tersimpan secara digital.
+        </div>
 
-          <div class="thank-you-info-text">
-            <strong>Informasi:</strong> Silakan unduh hasil file PDF bukti pembayaran di bawah ini. <strong>Portal akses ini akan ditutup setelah pengunduhan.</strong>
-          </div>
-
-          <!-- Download PDF Button -->
-          <button type="button" id="btn-download-pdf-recipient" class="btn btn-navy btn-block btn-lg margin-top-md">
-            <i class="fa-solid fa-file-pdf"></i> Download Dokumen PDF Bukti Pembayaran (A4)
+        <div class="form-actions">
+          <button type="button" id="btn-download-pdf-recipient" class="btn btn-navy btn-block">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF Bukti Pembayaran (A4)
           </button>
         </div>
       </div>
 
     </main>
-  </div>
 
-  <!-- MODAL LARGE SIGNATURE CANVAS POPUP -->
-  <div id="modal-canvas-overlay" class="modal-overlay hidden">
-    <div class="canvas-modal-card">
-      <div class="sheet-title-row">
-        <h3><i class="fa-solid fa-pen-nib text-navy"></i> Canvas Tanda Tangan Digital</h3>
-        <button type="button" id="btn-close-canvas-modal" class="btn-icon-close">&times;</button>
-      </div>
-      <p style="font-size: 11px; color: #64748b; text-align: left; margin-top: 4px;">Goreskan tanda tangan Anda dengan jari atau stylus di area putih di bawah ini:</p>
+    <!-- POPUP MODAL: LARGE CANVAS SIGNATURE PAD -->
+    <div id="modal-canvas-overlay" class="modal-overlay hidden">
+      <div class="canvas-modal-card">
+        <div class="sheet-title-row border-bottom">
+          <h3>Goreskan Tanda Tangan Digital</h3>
+          <button type="button" id="btn-close-canvas-modal" class="btn-icon-close">&times;</button>
+        </div>
 
-      <div class="canvas-large-wrapper">
-        <canvas id="signature-canvas-large"></canvas>
-        <div id="canvas-large-placeholder" class="canvas-large-placeholder">
-          <i class="fa-solid fa-hand-pointer" style="font-size: 24px;"></i>
-          <span>Goreskan Tanda Tangan di Sini</span>
+        <div class="canvas-large-wrapper">
+          <canvas id="signature-canvas-large"></canvas>
+          <div id="canvas-large-placeholder" class="canvas-large-placeholder">
+            <i class="fa-solid fa-signature" style="font-size: 28px; opacity: 0.4;"></i>
+            <span>Gunakan jari/stylus untuk tanda tangan</span>
+          </div>
+        </div>
+
+        <div class="modal-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" id="btn-clear-canvas-large" class="btn btn-outline" style="flex: 1;"><i class="fa-solid fa-eraser"></i> Bersihkan</button>
+          <button type="button" id="btn-save-canvas-modal" class="btn btn-navy" style="flex: 2;"><i class="fa-solid fa-check"></i> Simpan Tanda Tangan</button>
         </div>
       </div>
+    </div>
 
-      <div style="display: flex; justify-content: space-between; gap: 10px;">
-        <button type="button" id="btn-clear-canvas-large" class="btn btn-outline btn-sm">
-          <i class="fa-solid fa-eraser"></i> Hapus / Reset
-        </button>
-        <button type="button" id="btn-save-canvas-modal" class="btn btn-navy btn-sm">
-          <i class="fa-solid fa-check"></i> Simpan Tanda Tangan
-        </button>
+    <!-- CLEAN CONFIRMATION MODAL -->
+    <div id="modal-confirm-overlay" class="modal-overlay hidden">
+      <div class="modal-card clean-confirm-card">
+        <h3 class="confirm-modal-title">Konfirmasi Persetujuan</h3>
+        <p class="confirm-modal-desc">Apakah Anda yakin data penerimaan dan tanda tangan digital Anda sudah sesuai?</p>
+
+        <div class="action-buttons-list">
+          <button type="button" id="btn-modal-confirm" class="btn btn-navy btn-block">Ya, Saya Yakin</button>
+          <button type="button" id="btn-modal-cancel" class="btn btn-outline btn-block">Batal</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- CONFIRMATION MODAL ("Apakah Anda Yakin?" - RAPI TANPA ICON BULAT ANEH) -->
-  <div id="modal-confirm-overlay" class="modal-overlay hidden">
-    <div class="modal-card clean-confirm-card">
-      <h3 class="confirm-modal-title">Apakah Anda Yakin?</h3>
-      <p class="confirm-modal-desc">
-        Anda akan menyetujui dan membubuhkan tanda tangan digital pada dokumen bukti penyerahan dana ini.
-      </p>
-      <div class="modal-buttons margin-top">
-        <button type="button" id="btn-modal-cancel" class="btn btn-outline btn-block">Batal / Periksa Lagi</button>
-        <button type="button" id="btn-modal-confirm" class="btn btn-navy btn-block margin-top-xs">Ya, Saya Yakin</button>
-      </div>
-    </div>
   </div>
 
   <script src="app.js"></script>
