@@ -16,7 +16,7 @@
   <!-- html2pdf.js for PDF generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- Custom CSS (Root-relative path for clean deployment routes) -->
+  <!-- Custom CSS -->
   <link rel="stylesheet" href="/style.css">
 </head>
 <body class="mobile-app">
@@ -202,18 +202,19 @@
               </select>
             </div>
 
-            <!-- RINCIAN PEMBAYARAN TABLE SECTION -->
+            <!-- RINCIAN PEMBAYARAN SECTION (WITH TAMBAH BARIS BUTTON MOVED TO BOTTOM) -->
             <div class="rincian-box">
               <div class="rincian-box-header">
                 <label>Rincian Pembayaran</label>
-                <button type="button" id="btn-add-rincian" class="btn-text-action">
-                  <i class="fa-solid fa-plus-circle"></i> Tambah Baris
-                </button>
               </div>
 
               <div id="rincian-list" class="rincian-cards-list">
                 <!-- Rows injected dynamically via app.js -->
               </div>
+
+              <button type="button" id="btn-add-rincian" class="btn btn-outline btn-block margin-top-xs">
+                <i class="fa-solid fa-plus-circle text-navy"></i> Tambah Baris Rincian
+              </button>
             </div>
 
             <!-- TOTAL & TERBILANG PREVIEW -->
