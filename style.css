@@ -178,6 +178,8 @@ body.bg-soft {
   background: #d1fae5;
   color: #047857;
   border: 1px solid #a7f3d0;
+  padding: 4px 8px;
+  border-radius: 50%;
 }
 
 /* ==================== MAIN BODY ==================== */
@@ -452,6 +454,14 @@ body.bg-soft {
   flex: 1;
 }
 
+.doc-preview-body {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+  background: #cbd5e1;
+}
+
 /* ACTION POPUP MODAL STYLES */
 .modal-card {
   background: #ffffff;
@@ -706,16 +716,23 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   EXACT A4 DOKUMEN LAYOUT (14pt Title, 12pt Subtitle, 9pt Body, 1-Page Exact)
+   A4 PREVIEW FRAME WITH TRUE A4 ASPECT RATIO (210/297)
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
+  max-width: 440px;
+  max-height: 60vh;
+  aspect-ratio: 210 / 297;
+  overflow-y: auto;
   overflow-x: auto;
   display: flex;
   justify-content: flex-start;
-  padding: 10px 0;
-  background: #cbd5e1;
+  align-items: flex-start;
+  padding: 10px;
+  background: #94a3b8;
   border-radius: var(--radius-sm);
+  margin: 0 auto 16px auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .doc-printable-wrapper {
@@ -727,7 +744,7 @@ body.bg-soft {
   background-color: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: var(--radius-sm);
-  padding: 155px 48px 40px 48px; /* Top padding 155px lowers title comfortably below kop */
+  padding: 135px 48px 30px 48px; /* Top padding 135px places title nicely below kop */
   color: #000000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-family: 'Mulish', sans-serif;
@@ -739,9 +756,9 @@ body.bg-soft {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 794px;
+  height: 1123px;
+  object-fit: fill;
   z-index: 0;
   pointer-events: none;
 }
@@ -824,23 +841,23 @@ body.bg-soft {
   padding: 8px 10px;
   font-weight: 700;
   background: #ffffff;
-  text-align: center; /* Center cell alignment */
-  vertical-align: middle; /* Middle cell alignment */
+  text-align: center;
+  vertical-align: middle;
 }
 
 .ji-table td {
   border: 1px solid #000000;
   padding: 8px 10px;
-  text-align: center; /* Center cell alignment */
-  vertical-align: middle; /* Middle cell alignment */
+  text-align: center;
+  vertical-align: middle;
 }
 
 .ji-table tfoot td {
   font-weight: 800;
   border-top: 1px solid #000000;
   background: #ffffff;
-  text-align: center; /* Center cell alignment */
-  vertical-align: middle; /* Middle cell alignment */
+  text-align: center;
+  vertical-align: middle;
 }
 
 /* STATEMENTS SECTION (Justified Paragraphs, 9pt font) */
@@ -849,12 +866,12 @@ body.bg-soft {
   color: #000000;
   line-height: 1.6;
   margin-bottom: 24px;
-  text-align: justify; /* Justified paragraph */
+  text-align: justify;
 }
 
 .ji-statements-block p {
   margin-bottom: 8px;
-  text-align: justify; /* Justified paragraph */
+  text-align: justify;
 }
 
 /* SIGNATURES ROW (Enlarged signature images to fill space) */
@@ -1018,7 +1035,7 @@ body.bg-soft {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 155px 48px 40px 48px !important;
+    padding: 135px 48px 30px 48px !important;
     transform: none !important;
     page-break-after: avoid !important;
     page-break-inside: avoid !important;
@@ -1030,6 +1047,7 @@ body.bg-soft {
     display: block !important;
     width: 210mm !important;
     height: 297mm !important;
+    object-fit: fill !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
