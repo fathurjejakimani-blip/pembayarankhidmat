@@ -1221,7 +1221,7 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED SINGLE-DOWNLOAD & PROTECTED PDF RENDERER ====================
+// ==================== 6. GUARANTEED ZERO-OFFSET PERFECT PDF RENDERER ====================
 function downloadPDF(voucher, buttonEl) {
   if (!voucher) return;
   if (buttonEl && buttonEl.dataset.downloading === 'true') return;
@@ -1249,11 +1249,11 @@ function downloadPDF(voucher, buttonEl) {
     document.body.appendChild(captureContainer);
   }
 
-  // Exact 794px width container for html2canvas
-  captureContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 794px; height: auto; overflow: hidden; background: #ffffff; z-index: -9999; opacity: 0.01; pointer-events: none;';
+  // Exact 794px top-left zero-margin container
+  captureContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 794px; height: auto; overflow: hidden; background: #ffffff; z-index: -9999; opacity: 0.01; pointer-events: none; margin: 0 !important; padding: 0 !important;';
   
   captureContainer.innerHTML = `
-    <div class="doc-printable-wrapper" style="width: 794px; background: #ffffff; transform: none !important; margin: 0 auto;">
+    <div class="doc-printable-wrapper" style="width: 794px; background: #ffffff; transform: none !important; margin: 0 !important; padding: 0 !important;">
       ${generateDocumentHTML(voucher)}
     </div>
   `;
@@ -1261,6 +1261,7 @@ function downloadPDF(voucher, buttonEl) {
   const targetEl = captureContainer.querySelector('.doc-printable-wrapper');
   const filename = `Tanda_Terima_Pembayaran_${(voucher.noReferensi || 'OUT0001').replace(/[\/\\]/g, '_')}.pdf`;
 
+  // html2canvas with locked x: 0 and y: 0 coordinates
   const opt = {
     margin:       0,
     filename:     filename,
@@ -1271,6 +1272,8 @@ function downloadPDF(voucher, buttonEl) {
       allowTaint: true, 
       backgroundColor: '#ffffff', 
       logging: false,
+      x: 0,
+      y: 0,
       scrollX: 0,
       scrollY: 0,
       width: 794,
