@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tanda Terima Pembayaran - Admin Portal</title>
+
+  <!-- Google Fonts: Mulish & Martel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Martel:wght@600;700;800;900&family=Mulish:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- html2pdf.js for PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="mobile-app">
+
+  <div class="app-shell">
+    
+    <!-- GLASSMORPHISM WHITE HEADER WITH REFRESH ICON BUTTON -->
+    <header class="mobile-header">
+      <div class="brand">
+        <img src="logo-jejakimani.png" alt="Jejak Imani Logo" class="header-logo-raw">
+        <div>
+          <h1 class="brand-title">Tanda Terima Pembayaran</h1>
+          <p class="brand-subtitle">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <button type="button" id="btn-refresh-header" class="btn-icon-header" title="Refresh Data">
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT: DAFTAR DOKUMEN TABLE -->
+    <main class="mobile-body">
+      
+      <!-- SEARCH BAR & SINGLE FILTER DROPDOWN -->
+      <div class="search-filter-row">
+        <div class="search-input-wrapper">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" id="search-input" placeholder="Cari Ref / Penerima...">
+        </div>
+        <select id="filter-select" class="filter-dropdown">
+          <option value="all">Semua Status</option>
+          <option value="Menunggu Tanda Tangan">Menunggu TTD</option>
+          <option value="Sudah Ditandatangani">Selesai</option>
+        </select>
+      </div>
+
+      <!-- STATS SUMMARY CARD -->
+      <div class="stats-card">
+        <div class="stat-item">
+          <span class="stat-value" id="stat-total-count">0</span>
+          <span class="stat-label">Total Dokumen</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value text-warning" id="stat-pending-count">0</span>
+          <span class="stat-label">Menunggu TTD</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item">
+          <span class="stat-value text-success" id="stat-signed-count">0</span>
+          <span class="stat-label">Selesai</span>
+        </div>
+      </div>
+
+      <!-- DYNAMIC TABLE OF VOUCHER DOCUMENTS -->
+      <div class="table-card shadow-sm">
+        <div class="table-card-header">
+          <h2>Daftar Dokumen</h2>
+          <span class="table-hint">Klik baris untuk opsi aksi</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table-dynamic" id="vouchers-table">
+            <thead>
+              <tr>
+                <th>No. Ref</th>
+                <th>Penerima</th>
+                <th style="text-align: right;">Total</th>
+                <th style="text-align: center;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="vouchers-table-body">
+              <!-- Injected via app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FLOATING ACTION BUTTON (FAB) FOR CREATING NEW VOUCHER -->
+    <button type="button" id="btn-fab-add" class="fab-btn" title="Buat Dokumen Baru">
+      <i class="fa-solid fa-plus"></i>
+      <span class="fab-text">Buat Dokumen</span>
+    </button>
+
+    <!-- POPUP MODAL: ROW ACTIONS (Triggered by clicking any row) -->
+    <div id="modal-actions-overlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="sheet-title-row border-bottom">
+          <h3 id="action-modal-ref" class="text-navy font-mono">OUT0001</h3>
+          <button type="button" id="btn-close-actions-modal" class="btn-icon-close">&times;</button>
+        </div>
+
+        <div class="action-doc-info">
+          <div class="info-row">
+            <span class="label">Penerima:</span>
+            <strong id="action-modal-receiver" class="val">-</strong>
+          </div>
+          <div class="info-row">
+            <span class="label">Total Nominal:</span>
+            <strong id="action-modal-amount" class="val text-navy font-mono">-</strong>
+          </div>
+          <div class="info-row">
+            <span class="label">Status:</span>
+            <span id="action-modal-status" class="badge-status pending">-</span>
+          </div>
+        </div>
+
+        <div class="action-buttons-list">
+          <button type="button" id="btn-act-share" class="btn btn-outline btn-block">
+            <i class="fa-solid fa-share-nodes text-navy"></i> Salin Link Share
+          </button>
+          <button type="button" id="btn-act-preview" class="btn btn-navy btn-block">
+            <i class="fa-solid fa-eye"></i> Preview Dokumen A4
+          </button>
+          <button type="button" id="btn-act-download" class="btn btn-gold btn-block">
+            <i class="fa-solid fa-file-pdf"></i> Download PDF A4
+          </button>
+          <button type="button" id="btn-act-delete" class="btn btn-danger-outline btn-block">
+            <i class="fa-solid fa-trash"></i> Hapus Dokumen
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POPUP MODAL: FORM INPUT BUKTI PEMBAYARAN BARU -->
+    <div id="modal-form-overlay" class="modal-overlay hidden">
+      <div class="bottom-sheet">
+        <div class="sheet-header">
+          <div class="sheet-drag-handle"></div>
+          <div class="sheet-title-row">
+            <h2><i class="fa-solid fa-circle-plus text-navy"></i> Buat Dokumen Baru</h2>
+            <button type="button" id="btn-close-form" class="btn-icon-close">&times;</button>
+          </div>
+        </div>
+
+        <div class="sheet-body">
+          <form id="voucher-form">
+            
+            <div class="form-group">
+              <label for="noReferensi">No Referensi</label>
+              <input type="text" id="noReferensi" class="form-control font-mono" required>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="tanggal">Tanggal</label>
+                <input type="date" id="tanggal" class="form-control" required>
+              </div>
+              <div class="form-group">
+                <label for="wilayah">Wilayah</label>
+                <select id="wilayah" class="form-control" required>
+                  <option value="Jeddah">Jeddah</option>
+                  <option value="Madinah">Madinah</option>
+                  <option value="Makkah" selected>Makkah</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="diserahkanOleh">Dari (Diserahkan Oleh)</label>
+                <input type="text" id="diserahkanOleh" class="form-control" value="Fathur Rahman Al Masyi" required>
+              </div>
+              <div class="form-group">
+                <label for="diterimaOleh">Diterima Oleh</label>
+                <input type="text" id="diterimaOleh" class="form-control highlight" placeholder="Nama Penerima" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="metodePembayaran">Metode Pembayaran</label>
+              <select id="metodePembayaran" class="form-control" required>
+                <option value="Cash Riyal" selected>Cash Riyal (SAR)</option>
+                <option value="Transfer">Transfer Bank</option>
+              </select>
+            </div>
+
+            <!-- RINCIAN PEMBAYARAN TABLE SECTION -->
+            <div class="rincian-box">
+              <div class="rincian-box-header">
+                <label>Rincian Pembayaran</label>
+                <button type="button" id="btn-add-rincian" class="btn-text-action">
+                  <i class="fa-solid fa-plus-circle"></i> Tambah Baris
+                </button>
+              </div>
+
+              <div id="rincian-list" class="rincian-cards-list">
+                <!-- Rows injected dynamically via app.js -->
+              </div>
+            </div>
+
+            <!-- TOTAL & TERBILANG PREVIEW -->
+            <div class="summary-card">
+              <div class="summary-row">
+                <span>Total Nominal:</span>
+                <strong id="total-display" class="font-mono text-white">SAR 0</strong>
+              </div>
+              <div class="summary-terbilang" id="terbilang-display">
+                "Nol Saudi Riyal"
+              </div>
+            </div>
+
+            <!-- SUBMIT BUTTON -->
+            <div class="form-actions">
+              <button type="submit" id="btn-save-voucher" class="btn btn-navy btn-block">
+                <i class="fa-solid fa-paper-plane"></i> Simpan & Buat Link Share
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL SHARE LINK -->
+    <div id="modal-share-overlay" class="modal-overlay hidden">
+      <div class="modal-card">
+        <div class="modal-icon"><i class="fa-solid fa-share-nodes"></i></div>
+        <h3>Link Dokumen Siap!</h3>
+        <p>Bagikan link ini khusus kepada penerima untuk ditandatangani:</p>
+        
+        <div class="share-box">
+          <input type="text" id="share-link-input" readonly class="form-control font-mono">
+          <button type="button" id="btn-copy-share" class="btn btn-navy"><i class="fa-solid fa-copy"></i> Salin</button>
+        </div>
+
+        <div class="modal-buttons margin-top">
+          <a id="btn-open-recipient" href="#" target="_blank" class="btn btn-outline btn-block">Buka Portal Penerima <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          <button type="button" id="btn-close-share" class="btn btn-navy btn-block">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL PREVIEW PDF DOKUMEN (PATEN SCALED A4 VIEWPORT) -->
+    <div id="modal-preview-overlay" class="modal-overlay hidden">
+      <div class="bottom-sheet full-height">
+        <div class="sheet-header">
+          <div class="sheet-title-row">
+            <h2>Preview Dokumen A4</h2>
+            <div class="actions">
+              <button type="button" id="btn-download-pdf-admin" class="btn btn-navy btn-sm"><i class="fa-solid fa-download"></i> PDF A4</button>
+              <button type="button" id="btn-close-preview" class="btn-icon-close">&times;</button>
+            </div>
+          </div>
+        </div>
+        <div class="sheet-body doc-preview-body">
+          <div class="a4-preview-viewport">
+            <div id="pdf-doc-content" class="doc-printable-wrapper">
+              <!-- Rendered voucher document -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
