@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/doc/:id",
+      "destination": "/penerima.html?id=:id"
+    }
+  ]
+}
