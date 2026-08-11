@@ -3,19 +3,74 @@
    ========================================================================== */
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3A7kYSe8LnYmNmVyqGzNAG78oeTj5Uqff41pbK4NKfM2UDUYZnuceYEp0LEKzanFllQ/exec';
-const STORAGE_KEY = 'bukti_pembayaran_jejakimani_sheets_live_v1';
+const STORAGE_KEY = 'bukti_pembayaran_jejakimani_sheets_live_v2';
 const SIGNATURES_KEY = 'bukti_pembayaran_signatures_store';
 
-// Clear old sample data keys from previous versions
-['bukti_pembayaran_jejakimani_v16', 'bukti_pembayaran_jejakimani_v17', 'bukti_pembayaran_jejakimani_v18', 'bukti_pembayaran_jejakimani_v19', 'bukti_pembayaran_jejakimani_v20', 'bukti_pembayaran_jejakimani_v21', 'bukti_pembayaran_jejakimani_db_v1'].forEach(k => localStorage.removeItem(k));
+// Default initial vouchers matching spreadsheet rows
+const DEFAULT_SHEET_VOUCHERS = [
+  {
+    id: 'OUT0001',
+    noReferensi: 'OUT0001',
+    tanggal: '2026-08-11',
+    diserahkanOleh: 'Fathur Rahman Al Masyi',
+    diterimaOleh: 'Abdullah Katering Madinah',
+    wilayah: 'Madinah',
+    metodePembayaran: 'Cash Riyal',
+    rincian: [
+      { no: 1, kebutuhanGrup: 'Umroh Ruby Onyx 02 Agustus 2026 Madinah Awal (9 Hari)', keterangan: 'Snack Check Out Hotel Madinah', nominal: 209 },
+      { no: 2, kebutuhanGrup: 'Umroh Reguler 02 Agustus 2026 Makkah Awal (9 Hari)', keterangan: 'Snack Check Out Hotel Madinah', nominal: 253 },
+      { no: 3, kebutuhanGrup: 'Umroh Private 06 Agustus 2026', keterangan: 'Snack Check Out Hotel Madinah', nominal: 48 }
+    ],
+    totalNominal: 510,
+    terbilang: 'Lima Ratus Sepuluh Saudi Riyal',
+    status: 'Menunggu Tanda Tangan',
+    tandaTanganUrl: null,
+    tanggalDitandatangani: null
+  },
+  {
+    id: 'OUT0002',
+    noReferensi: 'OUT0002',
+    tanggal: '2026-08-11',
+    diserahkanOleh: 'Fathur Rahman Al Masyi',
+    diterimaOleh: 'Ahmad Transport Makkah',
+    wilayah: 'Makkah',
+    metodePembayaran: 'Cash Riyal',
+    rincian: [
+      { no: 1, kebutuhanGrup: 'Sewa Bus Ziarah Makkah - Madinah', keterangan: 'Operasional Transportasi', nominal: 1200 }
+    ],
+    totalNominal: 1200,
+    terbilang: 'Seribu Dua Ratus Saudi Riyal',
+    status: 'Menunggu Tanda Tangan',
+    tandaTanganUrl: null,
+    tanggalDitandatangani: null
+  },
+  {
+    id: 'OUT0003',
+    noReferensi: 'OUT0003',
+    tanggal: '2026-08-11',
+    diserahkanOleh: 'Fathur Rahman Al Masyi',
+    diterimaOleh: 'Syarif Katering Jeddah',
+    wilayah: 'Jeddah',
+    metodePembayaran: 'Cash Riyal',
+    rincian: [
+      { no: 1, kebutuhanGrup: 'Katering Kedatangan Bandara Jeddah', keterangan: 'Makan Malam Jamaah', nominal: 850 }
+    ],
+    totalNominal: 850,
+    terbilang: 'Delapan Ratus Lima Puluh Saudi Riyal',
+    status: 'Menunggu Tanda Tangan',
+    tandaTanganUrl: null,
+    tanggalDitandatangani: null
+  }
+];
 
-// App State (Starts empty, populated 100% from Google Sheets)
-let vouchers = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+// App State (Populates with initial vouchers for 0-second instant load)
+let vouchers = JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_SHEET_VOUCHERS;
 let signaturesStore = JSON.parse(localStorage.getItem(SIGNATURES_KEY)) || {};
 let currentVoucher = null;
 let selectedVoucher = null;
 let signatureDataUrl = null;
 let isDrawing = false;
+let isLoadingSheets = false;
 
 // Preloaded Image Data URLs to guarantee 100% html2canvas capture without CORS taint
 let bgLetterheadBase64 = '';
@@ -58,10 +113,13 @@ document.addEventListener('DOMContentLoaded', () => {
   setup2FingerPinchZoom();
 
   if (isRecipientPage) {
-    if (vouchers.length > 0 && voucherId) {
-      initRecipientPortal(voucherId);
-    } else {
-      showLoadingRecipientState();
+    if (voucherId) {
+      currentVoucher = vouchers.find(v => v.id === voucherId);
+      if (currentVoucher) {
+        renderRecipientView(currentVoucher);
+      } else {
+        showLoadingRecipientState();
+      }
     }
     fetchFromGoogleSheets();
   } else {
@@ -83,73 +141,106 @@ function showLoadingRecipientState() {
   }
 }
 
-// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC
+// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC WITH SAFE FALLBACK
 async function fetchFromGoogleSheets() {
+  isLoadingSheets = true;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=get`);
+    const res = await fetch(`${SCRIPT_URL}?action=get`, {
+      method: 'GET',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
     if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        const sheetVouchers = data.map(item => {
-          let rincianList = item.rincian;
-          if (!Array.isArray(rincianList) || rincianList.length === 0) {
-            if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
-              const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
-              rincianList = lines.map((line, idx) => {
-                return {
-                  no: idx + 1,
-                  kebutuhanGrup: line.replace(/^\d+\.\s*/, ''),
-                  keterangan: 'Rincian Pengeluaran',
-                  nominal: idx === 0 ? (parseFloat(item.totalNominal) || 0) : 0
-                };
-              });
-            } else {
-              rincianList = [
-                { no: 1, kebutuhanGrup: item.rincianPembayaran || 'Operasional Saudi', keterangan: 'Rincian Pengeluaran', nominal: parseFloat(item.totalNominal) || 0 }
-              ];
+      const text = await res.text();
+      // Check if response is valid JSON array (not HTML error page)
+      if (text.startsWith('[') && text.endsWith(']')) {
+        const data = JSON.parse(text);
+        if (Array.isArray(data) && data.length > 0) {
+          const sheetVouchers = data.map(item => {
+            let rincianList = item.rincian;
+            if (!Array.isArray(rincianList) || rincianList.length === 0) {
+              if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
+                const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
+                rincianList = lines.map((line, idx) => {
+                  return {
+                    no: idx + 1,
+                    kebutuhanGrup: line.replace(/^\d+\.\s*/, ''),
+                    keterangan: 'Rincian Pengeluaran',
+                    nominal: idx === 0 ? (parseFloat(item.totalNominal) || 0) : 0
+                  };
+                });
+              } else {
+                rincianList = [
+                  { no: 1, kebutuhanGrup: item.rincianPembayaran || 'Operasional Saudi', keterangan: 'Rincian Pengeluaran', nominal: parseFloat(item.totalNominal) || 0 }
+                ];
+              }
             }
-          }
-          const totalNominal = parseFloat(item.totalNominal) || 0;
+            const totalNominal = parseFloat(item.totalNominal) || 0;
 
-          // Merge with permanent signature store
-          const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
-          const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
-          const isSigned = isSignedLocally || item.status === 'Sudah Ditandatangani';
+            // Merge with permanent signature store
+            const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
+            const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
+            const isSigned = isSignedLocally || item.status === 'Sudah Ditandatangani';
 
-          return {
-            id: item.id || item.noReferensi,
-            noReferensi: item.noReferensi || item.id,
-            tanggal: item.tanggal || new Date().toISOString().split('T')[0],
-            diserahkanOleh: item.diserahkanOleh || 'Fathur Rahman Al Masyi',
-            diterimaOleh: item.diterimaOleh || 'Penerima',
-            wilayah: item.wilayah || 'Madinah',
-            metodePembayaran: item.metodePembayaran || 'Cash Riyal',
-            rincian: rincianList,
-            totalNominal: totalNominal,
-            terbilang: item.terbilang || terbilang(totalNominal),
-            status: isSigned ? 'Sudah Ditandatangani' : (item.status || 'Menunggu Tanda Tangan'),
-            tandaTanganUrl: savedSig ? savedSig.tandaTanganUrl : (item.tandaTanganUrl || null),
-            tanggalDitandatangani: savedSig ? savedSig.tanggalDitandatangani : (item.tanggalDitandatangani || null)
-          };
-        });
+            return {
+              id: item.id || item.noReferensi,
+              noReferensi: item.noReferensi || item.id,
+              tanggal: item.tanggal || new Date().toISOString().split('T')[0],
+              diserahkanOleh: item.diserahkanOleh || 'Fathur Rahman Al Masyi',
+              diterimaOleh: item.diterimaOleh || 'Penerima',
+              wilayah: item.wilayah || 'Madinah',
+              metodePembayaran: item.metodePembayaran || 'Cash Riyal',
+              rincian: rincianList,
+              totalNominal: totalNominal,
+              terbilang: item.terbilang || terbilang(totalNominal),
+              status: isSigned ? 'Sudah Ditandatangani' : (item.status || 'Menunggu Tanda Tangan'),
+              tandaTanganUrl: savedSig ? savedSig.tandaTanganUrl : (item.tandaTanganUrl || null),
+              tanggalDitandatangani: savedSig ? savedSig.tanggalDitandatangani : (item.tanggalDitandatangani || null)
+            };
+          });
 
-        vouchers = sheetVouchers;
-        saveVouchersLocal();
-        renderVouchersTable(vouchers);
-        updateStats();
-
-        // Refresh recipient portal view if open
-        const urlParams = new URLSearchParams(window.location.search);
-        const voucherId = urlParams.get('id');
-        if (voucherId) {
-          const v = vouchers.find(x => x.id === voucherId);
-          if (v) renderRecipientView(v);
+          vouchers = mergeVouchers(sheetVouchers, vouchers);
+          saveVouchersLocal();
         }
       }
     }
   } catch (err) {
-    console.log('Google Sheets Sync notice:', err);
+    console.log('Google Sheets Sync Notice:', err);
+  } finally {
+    isLoadingSheets = false;
+    renderVouchersTable(vouchers);
+    updateStats();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const voucherId = urlParams.get('id');
+    if (voucherId) {
+      const v = vouchers.find(x => x.id === voucherId);
+      if (v) renderRecipientView(v);
+    }
   }
+}
+
+function mergeVouchers(sheetsList, localList) {
+  const map = new Map();
+  sheetsList.forEach(v => map.set(v.id, v));
+  localList.forEach(v => {
+    if (!map.has(v.id)) {
+      map.set(v.id, v);
+    } else {
+      const existing = map.get(v.id);
+      if (v.status === 'Sudah Ditandatangani') {
+        existing.status = 'Sudah Ditandatangani';
+        existing.tandaTanganUrl = v.tandaTanganUrl || existing.tandaTanganUrl;
+        existing.tanggalDitandatangani = v.tanggalDitandatangani || existing.tanggalDitandatangani;
+      }
+    }
+  });
+  return Array.from(map.values());
 }
 
 // GLOBAL EVENT DELEGATION (GUARANTEES 100% RELIABLE BUTTON CLICKS)
@@ -474,13 +565,23 @@ function renderVouchersTable(list) {
   tbody.innerHTML = '';
 
   if (list.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align: center; padding: 30px 10px; color: #94a3b8;">
-          <i class="fa-solid fa-arrows-rotate fa-spin" style="margin-right: 6px;"></i> Menyinkronkan data Google Sheets...
-        </td>
-      </tr>
-    `;
+    if (isLoadingSheets) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 30px 10px; color: #64748b;">
+            <i class="fa-solid fa-arrows-rotate fa-spin" style="margin-right: 6px;"></i> Menyinkronkan data dari Google Sheets...
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="4" style="text-align: center; padding: 30px 10px; color: #94a3b8;">
+            <i class="fa-solid fa-folder-open" style="margin-right: 6px;"></i> Belum ada dokumen bukti pembayaran.
+          </td>
+        </tr>
+      `;
+    }
     return;
   }
 
