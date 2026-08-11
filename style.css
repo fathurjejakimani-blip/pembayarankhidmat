@@ -811,7 +811,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   PERFECT RESTORED A4 SHEET CONTAINER SYSTEM (794px x 1120px)
+   PERFECT OPTIMIZED A4 CONTAINER SYSTEM (ZERO PAGE 3 OVERFLOW)
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -841,7 +841,7 @@ body.bg-soft {
   flex-shrink: 0;
 }
 
-/* INDIVIDUAL A4 PAGE CONTAINER WITH DYNAMIC ROW WEIGHT SYSTEM */
+/* INDIVIDUAL A4 PAGE CONTAINER OPTIMIZED FOR ZERO OVERFLOW */
 .doc-printable-page {
   width: 794px !important;
   height: 1120px !important;
@@ -852,7 +852,7 @@ body.bg-soft {
   background-color: #ffffff;
   border: none !important;
   outline: none !important;
-  padding: 135px 45px 30px 45px;
+  padding: 130px 45px 30px 45px;
   color: #000000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-family: 'Mulish', sans-serif;
@@ -863,7 +863,7 @@ body.bg-soft {
 }
 
 .doc-printable-page.page-subsequent {
-  padding-top: 135px;
+  padding-top: 130px;
 }
 
 /* ISOLATED CAPTURE CONTAINER STYLING */
@@ -901,7 +901,7 @@ body.bg-soft {
 /* DOCUMENT MAIN TITLE (14pt Title & 12pt Subtitle) */
 .ji-doc-title-block {
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
 }
 
 .ji-main-title {
@@ -925,8 +925,8 @@ body.bg-soft {
 .ji-meta-lines {
   font-size: 9pt;
   color: #000000;
-  margin-bottom: 16px;
-  line-height: 1.6;
+  margin-bottom: 14px;
+  line-height: 1.5;
 }
 
 .ji-meta-row {
@@ -952,7 +952,7 @@ body.bg-soft {
   font-size: 9.5pt;
   text-transform: uppercase;
   color: #000000;
-  margin: 14px 0 6px 0;
+  margin: 12px 0 6px 0;
   letter-spacing: 0.3px;
 }
 
@@ -962,13 +962,13 @@ body.bg-soft {
   border-collapse: collapse;
   font-size: 9pt;
   color: #000000;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   border: 1px solid #000000;
 }
 
 .ji-table th {
   border: 1px solid #000000;
-  padding: 8px 10px;
+  padding: 6px 8px;
   font-weight: 700;
   background: #ffffff;
   text-align: center;
@@ -977,7 +977,7 @@ body.bg-soft {
 
 .ji-table td {
   border: 1px solid #000000;
-  padding: 8px 10px;
+  padding: 6px 8px;
   vertical-align: middle;
 }
 
@@ -993,22 +993,22 @@ body.bg-soft {
 .ji-statements-block {
   font-size: 9pt;
   color: #000000;
-  line-height: 1.6;
-  margin-bottom: 24px;
+  line-height: 1.5;
+  margin-bottom: 16px;
   text-align: justify;
 }
 
 .ji-statements-block p {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   text-align: justify;
 }
 
-/* SIGNATURES ROW */
+/* SIGNATURES ROW OPTIMIZED FOR ZERO OVERFLOW */
 .ji-signatures-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  margin-top: 24px;
+  margin-top: 16px;
   text-align: center;
   font-size: 9pt;
 }
@@ -1021,20 +1021,20 @@ body.bg-soft {
 
 .ji-sig-label {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .ji-sig-space {
-  height: 85px;
+  height: 75px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   width: 100%;
 }
 
 .ji-sig-img {
-  max-height: 80px;
+  max-height: 70px;
   max-width: 100%;
   object-fit: contain;
 }
@@ -1042,11 +1042,11 @@ body.bg-soft {
 .ji-sig-name {
   font-weight: 800;
   color: #000000;
-  font-size: 10pt;
+  font-size: 9.5pt;
 }
 
 .ji-sig-role {
-  font-size: 8.5pt;
+  font-size: 8pt;
   color: #444444;
 }
 
@@ -1182,7 +1182,7 @@ body.bg-soft {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 135px 45px 30px 45px !important;
+    padding: 130px 45px 30px 45px !important;
     transform: none !important;
     page-break-inside: avoid !important;
     overflow: hidden !important;
