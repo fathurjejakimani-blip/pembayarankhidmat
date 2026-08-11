@@ -3,7 +3,7 @@
    ========================================================================== */
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3A7kYSe8LnYmNmVyqGzNAG78oeTj5Uqff41pbK4NKfM2UDUYZnuceYEp0LEKzanFllQ/exec';
-const STORAGE_KEY = 'bukti_pembayaran_jejakimani_v13';
+const STORAGE_KEY = 'bukti_pembayaran_jejakimani_v14';
 
 // Initial Sample Voucher matching exact PDF sample
 const SAMPLE_VOUCHERS = [
@@ -611,23 +611,23 @@ function generateDocumentHTML(v) {
 
   const rincianRows = v.rincian.map((item, idx) => `
     <tr>
-      <td style="text-align: center;">${idx + 1}</td>
+      <td>${idx + 1}</td>
       <td style="font-weight: 500;">${item.kebutuhanGrup}</td>
       <td>${item.keterangan}</td>
-      <td style="text-align: right; font-family: sans-serif; font-weight: 500;">${formatSAR(item.nominal)}</td>
+      <td style="font-weight: 600;">${formatSAR(item.nominal)}</td>
     </tr>
   `).join('');
 
   return `
     <img src="bg-letterhead.png" alt="Letterhead Background" class="ji-bg-letterhead-img">
     <div class="doc-inner-content">
-      <!-- MAIN DOCUMENT TITLE -->
+      <!-- MAIN DOCUMENT TITLE (14pt Title & 12pt Subtitle) -->
       <div class="ji-doc-title-block">
         <h1 class="ji-main-title">TANDA TERIMA PEMBAYARAN</h1>
         <h2 class="ji-sub-title">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</h2>
       </div>
 
-      <!-- META INFORMATION PERSIS PDF SAMPLE -->
+      <!-- META INFORMATION (9pt Font, Justified Paragraphs) -->
       <div class="ji-meta-lines">
         <div class="ji-meta-row">
           <span class="ji-meta-label">No. Referensi</span>
@@ -676,14 +676,14 @@ function generateDocumentHTML(v) {
 
       <div class="ji-section-heading">RINCIAN PEMBAYARAN</div>
 
-      <!-- RINCIAN TABLE -->
+      <!-- RINCIAN TABLE (Center Center Cell Alignment) -->
       <table class="ji-table">
         <thead>
           <tr>
             <th style="width: 35px;">No</th>
             <th style="width: 40%;">Kebutuhan Grup</th>
             <th>Keterangan</th>
-            <th style="width: 90px; text-align: right;">Nominal</th>
+            <th style="width: 95px;">Nominal</th>
           </tr>
         </thead>
         <tbody>
@@ -692,18 +692,18 @@ function generateDocumentHTML(v) {
         <tfoot>
           <tr>
             <td colspan="3" style="text-align: center; font-weight: 800;">TOTAL</td>
-            <td style="text-align: right; font-weight: 800;">${formatSAR(v.totalNominal)}</td>
+            <td style="text-align: center; font-weight: 800;">${formatSAR(v.totalNominal)}</td>
           </tr>
         </tfoot>
       </table>
 
-      <!-- STATEMENTS BLOCK PERSIS SAMPLE PDF -->
+      <!-- STATEMENTS BLOCK (Justified Paragraphs) -->
       <div class="ji-statements-block">
         <p>Bahwa Pihak Pertama telah menyerahkan dana dengan total nominal tersebut diatas kepada Pihak Kedua. Pihak Kedua menyatakan telah menerima dana tersebut secara lengkap dan benar sesuai dengan rincian pengeluaran di atas untuk alokasi operasional saudi.</p>
         <p>Dokumen ini disetujui dan ditandatangani secara elektronik/digital serta berlaku sebagai bukti pembayaran yang sah bagi kedua belah pihak.</p>
       </div>
 
-      <!-- SIGNATURES GRID WITH PATEN DISERAHKAN OLEH SIGNATURE -->
+      <!-- SIGNATURES GRID WITH ENLARGED SIGNATURE IMAGES -->
       <div class="ji-signatures-grid">
         <div class="ji-sig-box">
           <div class="ji-sig-label">Diserahkan Oleh</div>
@@ -752,13 +752,17 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED PDF GENERATOR (HYBRID HYPER-RELIABLE) ====================
+// ==================== 6. GUARANTEED 1-PAGE EXACT A4 PDF GENERATOR ====================
 function downloadPDF(voucher, callback) {
   if (!voucher) return;
 
   let element = document.getElementById('pdf-doc-content');
   if (!element) return;
   element.innerHTML = generateDocumentHTML(voucher);
+
+  // Reset any zoom transform during capture to avoid space margin issues
+  const originalTransform = element.style.transform;
+  element.style.transform = 'none';
 
   const previewModal = document.getElementById('modal-preview-overlay');
   const isHiddenModal = previewModal && previewModal.classList.contains('hidden');
@@ -770,6 +774,7 @@ function downloadPDF(voucher, callback) {
   let pdfDone = false;
 
   const finishProcess = () => {
+    element.style.transform = originalTransform;
     if (isHiddenModal && previewModal) {
       previewModal.classList.add('hidden');
       previewModal.style.visibility = '';
@@ -784,7 +789,8 @@ function downloadPDF(voucher, callback) {
     filename:     filename,
     image:        { type: 'jpeg', quality: 0.98 },
     html2canvas:  { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
   // Attempt html2pdf
