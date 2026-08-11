@@ -49,6 +49,7 @@ body.mobile-app {
   min-height: 100vh;
   display: flex;
   justify-content: center;
+  overflow-x: hidden;
 }
 
 body.bg-soft {
@@ -67,6 +68,7 @@ body.bg-soft {
   box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
+  margin: 0 auto;
 }
 
 /* ==================== GLASSMORPHISM TOP HEADERS ==================== */
@@ -156,15 +158,17 @@ body.bg-soft {
   100% { transform: rotate(360deg); }
 }
 
-/* SMALL ROUNDED HEADER PILL BADGE FOR RECIPIENT PORTAL */
+/* ICON-ONLY HEADER PILL BADGE FOR RECIPIENT PORTAL */
 .pill-badge {
-  font-size: 9.5px;
+  font-size: 13px;
   font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 20px;
+  padding: 6px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   white-space: nowrap;
 }
 
@@ -178,8 +182,6 @@ body.bg-soft {
   background: #d1fae5;
   color: #047857;
   border: 1px solid #a7f3d0;
-  padding: 4px 8px;
-  border-radius: 50%;
 }
 
 /* ==================== MAIN BODY ==================== */
@@ -474,6 +476,93 @@ body.bg-soft {
   text-align: left;
 }
 
+/* REFINED SHARE LINK MODAL STYLING */
+.share-modal-card {
+  padding: 22px;
+  width: 92%;
+  max-width: 420px;
+  border-radius: var(--radius-lg);
+}
+
+.modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.share-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--navy-light);
+  color: var(--navy-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.share-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--navy-primary);
+  margin-bottom: 4px;
+}
+
+.share-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.share-input-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.share-link-input {
+  flex: 1;
+  font-size: 12px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid var(--navy-border);
+  border-radius: var(--radius-md);
+  color: var(--navy-primary);
+  font-weight: 600;
+}
+
+.btn-copy {
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.modal-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* WHATSAPP SHARE BUTTON STYLING */
+.btn-whatsapp {
+  background: #25d366;
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-whatsapp:hover {
+  background: #1da851;
+  color: #ffffff !important;
+}
+
 /* CLEAN CONFIRMATION MODAL */
 .clean-confirm-card {
   padding: 24px;
@@ -716,7 +805,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   A4 PREVIEW FRAME WITH TRUE A4 ASPECT RATIO (210/297)
+   A4 PREVIEW FRAME WITH BOUNDED A4 ASPECT RATIO (210/297)
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -750,6 +839,20 @@ body.bg-soft {
   font-family: 'Mulish', sans-serif;
   position: relative;
   box-sizing: border-box;
+}
+
+/* ISOLATED CAPTURE CONTAINER STYLING ACCORDING TO EXACT INSTRUCTION */
+#pdf-hidden-capture-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 794px;
+  height: 1123px;
+  overflow: hidden;
+  background: #ffffff;
+  z-index: -9999;
+  opacity: 0.01;
+  pointer-events: none;
 }
 
 .ji-bg-letterhead-img {
@@ -998,7 +1101,7 @@ body.bg-soft {
 .text-center { text-align: center; }
 
 /* ==========================================================================
-   PRINT-ONLY HIGH RESOLUTION A4 STYLES (EXACT 1-PAGE A4 PRINT)
+   PRINT-ONLY HIGH RESOLUTION A4 STYLES
    ========================================================================== */
 @media print {
   @page {
@@ -1012,8 +1115,6 @@ body.bg-soft {
     width: 210mm !important;
     height: 297mm !important;
     overflow: hidden !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
   .mobile-header, .recipient-header, .search-filter-row, .stats-card, .table-card, .fab-btn, .form-card, .modal-overlay, #status-badge-container, #signature-form-box, #thank-you-container, .form-actions {
     display: none !important;
@@ -1027,6 +1128,18 @@ body.bg-soft {
     max-width: 210mm !important;
     border: none !important;
     overflow: hidden !important;
+  }
+  #pdf-hidden-capture-container {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    opacity: 1 !important;
+    z-index: 99999 !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
   }
   .doc-printable-wrapper {
     width: 210mm !important;
