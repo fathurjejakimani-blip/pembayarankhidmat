@@ -206,7 +206,51 @@ function showLoadingRecipientState() {
   }
 }
 
-// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC WITH INTELLIGENT TEXT PARSER
+// INTELLIGENT PARSER FOR RINCIAN ITEMS (PARSES (SAR XXX), REMOVES DUMMY 'Rincian Pengeluaran', SEPARATES COLUMNS)
+function cleanAndParseRincianItem(item, fallbackNominal = 0) {
+  let keb = (item.kebutuhanGrup || '').trim();
+  let ket = (item.keterangan || '').trim();
+  let nom = parseFloat(item.nominal) || 0;
+
+  if (ket === 'Rincian Pengeluaran') ket = '';
+
+  // Extract (SAR xxx) from ket if present
+  const sarMatchKet = ket.match(/\(SAR\s*([\d\.,]+)\)/i);
+  if (sarMatchKet) {
+    if (nom === 0) {
+      nom = parseFloat(sarMatchKet[1].replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    ket = ket.replace(/\(SAR\s*[\d\.,]+\)/i, '').trim();
+  }
+
+  // Extract (SAR xxx) from keb if present
+  const sarMatchKeb = keb.match(/\(SAR\s*([\d\.,]+)\)/i);
+  if (sarMatchKeb) {
+    if (nom === 0) {
+      nom = parseFloat(sarMatchKeb[1].replace(/\./g, '').replace(',', '.')) || 0;
+    }
+    keb = keb.replace(/\(SAR\s*[\d\.,]+\)/i, '').trim();
+  }
+
+  // Clean trailing dash or 'Rincian Pengeluaran'
+  ket = ket.replace(/^-\s*/, '').replace(/\s*-\s*Rincian Pengeluaran\s*$/i, '').trim();
+  keb = keb.replace(/\s*-\s*Rincian Pengeluaran\s*$/i, '').trim();
+
+  // If keb contains ' - ', split into keb and ket
+  if (keb.includes(' - ') && (!ket || ket === '-')) {
+    const firstDashIdx = keb.indexOf(' - ');
+    const originalKeb = keb;
+    keb = originalKeb.substring(0, firstDashIdx).trim();
+    ket = originalKeb.substring(firstDashIdx + 3).trim();
+  }
+
+  if (!ket) ket = '-';
+  if (nom === 0 && fallbackNominal > 0) nom = fallbackNominal;
+
+  return { kebutuhanGrup: keb, keterangan: ket, nominal: nom };
+}
+
+// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC
 async function fetchFromGoogleSheets() {
   isLoadingSheets = true;
 
@@ -226,46 +270,29 @@ async function fetchFromGoogleSheets() {
         const data = JSON.parse(text);
         if (Array.isArray(data) && data.length > 0) {
           const sheetVouchers = data.map(item => {
-            let rincianList = item.rincian;
-            
-            // Smart Multiline Text Parser for Column H (rincianPembayaran)
-            if (!Array.isArray(rincianList) || rincianList.length === 0) {
-              if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
-                const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
-                rincianList = lines.map((line, idx) => {
-                  let cleanLine = line.replace(/^\d+\.\s*/, '').trim();
-                  let keb = cleanLine;
-                  let ket = 'Rincian Pengeluaran';
-                  let nom = idx === 0 ? (parseFloat(item.totalNominal) || 0) : 0;
+            let rincianList = [];
+            const headerTotalNominal = parseFloat(item.totalNominal) || 0;
 
-                  // Extract SAR Nominal at end of line if present e.g. (SAR 1234)
-                  const sarMatch = cleanLine.match(/\(SAR\s*([\d\.,]+)\)$/i);
-                  if (sarMatch) {
-                    nom = parseFloat(sarMatch[1].replace(/\./g, '').replace(',', '.')) || 0;
-                    keb = cleanLine.replace(/\(SAR\s*[\d\.,]+\)$/i, '').trim();
-                  }
-
-                  // Separate Kebutuhan Grup and Keterangan if separated by ' - '
-                  if (keb.includes(' - ')) {
-                    const parts = keb.split(' - ');
-                    keb = parts[0].trim();
-                    ket = parts.slice(1).join(' - ').trim();
-                  }
-
-                  return {
-                    no: idx + 1,
-                    kebutuhanGrup: keb,
-                    keterangan: ket,
-                    nominal: nom
-                  };
-                });
-              } else {
-                rincianList = [
-                  { no: 1, kebutuhanGrup: item.rincianPembayaran || 'Operasional Saudi', keterangan: 'Rincian Pengeluaran', nominal: parseFloat(item.totalNominal) || 0 }
-                ];
-              }
+            if (Array.isArray(item.rincian) && item.rincian.length > 0) {
+              rincianList = item.rincian.map(r => cleanAndParseRincianItem(r));
+            } else if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
+              const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
+              rincianList = lines.map((line, idx) => {
+                let cleanLine = line.replace(/^\d+\.\s*/, '').trim();
+                let parsed = cleanAndParseRincianItem({ kebutuhanGrup: cleanLine, keterangan: '', nominal: 0 });
+                if (parsed.nominal === 0 && idx === 0 && headerTotalNominal > 0) {
+                  parsed.nominal = headerTotalNominal;
+                }
+                return { no: idx + 1, ...parsed };
+              });
+            } else {
+              rincianList = [
+                { no: 1, kebutuhanGrup: item.rincianPembayaran || 'Operasional Saudi', keterangan: '-', nominal: headerTotalNominal }
+              ];
             }
-            const totalNominal = parseFloat(item.totalNominal) || 0;
+
+            const calculatedTotal = rincianList.reduce((acc, curr) => acc + (curr.nominal || 0), 0);
+            const finalTotalNominal = calculatedTotal > 0 ? calculatedTotal : headerTotalNominal;
 
             const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
             const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
@@ -280,8 +307,8 @@ async function fetchFromGoogleSheets() {
               wilayah: item.wilayah || 'Madinah',
               metodePembayaran: item.metodePembayaran || 'Cash Riyal',
               rincian: rincianList,
-              totalNominal: totalNominal,
-              terbilang: item.terbilang || terbilang(totalNominal),
+              totalNominal: finalTotalNominal,
+              terbilang: item.terbilang || terbilang(finalTotalNominal),
               status: isSigned ? 'Sudah Ditandatangani' : (item.status || 'Menunggu Tanda Tangan'),
               tandaTanganUrl: savedSig ? savedSig.tandaTanganUrl : (item.tandaTanganUrl || null),
               tanggalDitandatangani: savedSig ? savedSig.tanggalDitandatangani : (item.tanggalDitandatangani || null)
@@ -492,11 +519,10 @@ function initAdminPortal() {
         const ket = card.querySelector('.input-keterangan').value.trim();
         const nom = parseFloat(card.querySelector('.input-nominal').value) || 0;
         if (keb || ket || nom > 0) {
+          const parsed = cleanAndParseRincianItem({ kebutuhanGrup: keb, keterangan: ket, nominal: nom });
           rincianItems.push({
             no: idx + 1,
-            kebutuhanGrup: keb,
-            keterangan: ket,
-            nominal: nom
+            ...parsed
           });
         }
       });
@@ -751,7 +777,7 @@ function showShareModal(voucher) {
   const btnOpen = document.getElementById('btn-open-recipient');
   if (btnOpen) btnOpen.href = directUrl;
 
-  // WhatsApp Message Generator (matching exact template requested)
+  // WhatsApp Message Generator
   const receiverName = voucher.diterimaOleh || 'Bapak/Ibu';
   const waMessageText = `Assalamualaikum wr.wb ${receiverName}
 Izin konfirmasi, berikut terlampir link konfirmasi bukti pembayaran yang sudah dilaksanakan:
@@ -955,11 +981,14 @@ function generateDocumentHTML(v) {
   const bgSrc = bgLetterheadBase64 || '/bg-letterhead.png';
   const ttdDiserahkanSrc = ttdDiserahkanBase64 || '/ttd-diserahkan.png';
 
-  const itemsPerPageFirst = 5; // Max 5 items on Page 1 to ensure signatures & statements fit without cutoff
+  const itemsPerPageFirst = 5;
   const itemsPerPageSubsequent = 8;
-  const rincianList = v.rincian || [];
+  
+  // Clean all rincian items to guarantee correct column mapping
+  const rawList = v.rincian || [];
+  const rincianList = rawList.map(r => cleanAndParseRincianItem(r));
 
-  // SINGLE PAGE DOCUMENT (<= 5 items) - GUARANTEES EXACT 1 PAGE A4 WITH NO EXTRA PAGES & FULL SIGNATURE VISIBILITY
+  // SINGLE PAGE DOCUMENT (<= 5 items) - GUARANTEES EXACT 1 PAGE A4
   if (rincianList.length <= itemsPerPageFirst) {
     const rincianRows = rincianList.map((item, idx) => `
       <tr>
@@ -1036,7 +1065,7 @@ function generateDocumentHTML(v) {
     `;
   }
 
-  // MULTI-PAGE DOCUMENT (> 5 items) - NO REPETITION OF TITLE & META ON PAGE 2
+  // MULTI-PAGE DOCUMENT (> 5 items)
   const page1Items = rincianList.slice(0, itemsPerPageFirst);
   const remainingItems = rincianList.slice(itemsPerPageFirst);
   
@@ -1203,10 +1232,11 @@ function downloadPDF(voucher, callback) {
     document.body.appendChild(captureContainer);
   }
 
+  // Exact 794px width container for html2canvas
   captureContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 794px; height: auto; overflow: hidden; background: #ffffff; z-index: -9999; opacity: 0.01; pointer-events: none;';
   
   captureContainer.innerHTML = `
-    <div class="doc-printable-wrapper" style="width: 794px; background: #ffffff; transform: none !important;">
+    <div class="doc-printable-wrapper" style="width: 794px; background: #ffffff; transform: none !important; margin: 0 auto;">
       ${generateDocumentHTML(voucher)}
     </div>
   `;
@@ -1226,6 +1256,7 @@ function downloadPDF(voucher, callback) {
       logging: false,
       scrollX: 0,
       scrollY: 0,
+      width: 794,
       windowWidth: 794
     },
     jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
