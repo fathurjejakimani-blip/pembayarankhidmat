@@ -975,7 +975,7 @@ function checkCanSubmit() {
   }
 }
 
-// ==================== 4. COMPACT & BALANCED MULTI-PAGE ROW BUILDER ====================
+// ==================== 4. CONTINUOUS FLUID A4 MULTI-PAGE BUILDER ====================
 function getRincianItemWeight(item) {
   const maxLen = Math.max(
     (item.kebutuhanGrup || '').length,
@@ -996,9 +996,9 @@ function chunkRincianItemsSmart(rincianList) {
     const item = rincianList[i];
     const weight = getRincianItemWeight(item);
     
-    // Page 1 capacity: 9.5 points (fits up to 7-8 items comfortably with tight padding)
-    // Page 2+ capacity: 15 points (fits up to 12-14 items comfortably alongside signatures)
-    const maxCapacity = isFirstPage ? 9.5 : 15;
+    // Page 1 capacity with 175px top padding: 7.2 points (fills Page 1 down to bottom padding without exceeding it)
+    // Page 2+ capacity: 12.5 points (fills Page 2 down to bottom padding with signatures block)
+    const maxCapacity = isFirstPage ? 7.2 : 12.5;
 
     if (currentPoints + weight > maxCapacity && currentPage.length > 0) {
       pages.push(currentPage);
