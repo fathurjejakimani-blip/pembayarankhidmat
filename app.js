@@ -975,14 +975,15 @@ function checkCanSubmit() {
   }
 }
 
-// ==================== 4. CONTINUOUS FLUID A4 MULTI-PAGE BUILDER ====================
+// ==================== 4. CONTINUOUS FLUID A4 MULTI-PAGE BUILDER (MAX DENSITY) ====================
 function getRincianItemWeight(item) {
-  const maxLen = Math.max(
-    (item.kebutuhanGrup || '').length,
-    (item.keterangan || '').length
-  );
-  if (maxLen > 80) return 1.8;
-  if (maxLen >= 40) return 1.3;
+  const kebLen = (item.kebutuhanGrup || '').length;
+  const ketLen = (item.keterangan || '').length;
+  const maxLen = Math.max(kebLen, ketLen);
+
+  if (maxLen > 105) return 2.2;
+  if (maxLen > 70) return 1.7;
+  if (maxLen > 35) return 1.3;
   return 1;
 }
 
@@ -996,9 +997,9 @@ function chunkRincianItemsSmart(rincianList) {
     const item = rincianList[i];
     const weight = getRincianItemWeight(item);
     
-    // Page 1 capacity with 175px top padding: 7.2 points (fills Page 1 down to bottom padding without exceeding it)
-    // Page 2+ capacity: 12.5 points (fills Page 2 down to bottom padding with signatures block)
-    const maxCapacity = isFirstPage ? 7.2 : 12.5;
+    // Page 1 capacity: 15.5 points (fills Page 1 down to bottom padding 25px without leaving empty space)
+    // Page 2+ capacity: 18 points (fills Page 2 down to bottom padding 25px alongside signatures)
+    const maxCapacity = isFirstPage ? 15.5 : 18;
 
     if (currentPoints + weight > maxCapacity && currentPage.length > 0) {
       pages.push(currentPage);
