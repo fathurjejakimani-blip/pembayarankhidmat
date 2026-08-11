@@ -584,7 +584,7 @@ body.bg-soft {
   margin-bottom: 18px;
 }
 
-/* THANK YOU SECTION STYLING (CLEAN WITHOUT EXTRA ICONS) */
+/* THANK YOU SECTION STYLING */
 .thank-you-title {
   font-family: var(--font-serif);
   font-size: 22px;
@@ -779,6 +779,12 @@ body.bg-soft {
   border-radius: var(--radius-md);
   border: none;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .btn-navy {
@@ -825,35 +831,37 @@ body.bg-soft {
 }
 
 .doc-printable-wrapper {
-  width: 794px; /* Native 96DPI A4 Width */
+  width: 794px !important; /* Fixed Native 96DPI A4 Width */
+  margin: 0 auto !important;
+  transform: none !important;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: #ffffff;
   flex-shrink: 0;
 }
 
 /* INDIVIDUAL A4 PAGE CONTAINER */
 .doc-printable-page {
-  width: 794px;
-  height: 1123px;
-  min-height: 1123px;
-  max-height: 1123px;
+  width: 794px !important;
+  height: 1123px !important;
+  min-height: 1123px !important;
+  max-height: 1123px !important;
   overflow: hidden;
   flex-shrink: 0;
   background-color: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: var(--radius-sm);
-  padding: 135px 48px 30px 48px; /* Top padding 135px places title nicely below kop */
+  border: none;
+  padding: 135px 45px 30px 45px; /* Top clearance places title below kop background */
   color: #000000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-family: 'Mulish', sans-serif;
   position: relative;
   box-sizing: border-box;
   page-break-inside: avoid;
+  margin: 0 auto !important;
 }
 
 .doc-printable-page.page-subsequent {
-  padding-top: 135px; /* Same letterhead Kop top clearance */
+  padding-top: 135px;
 }
 
 /* ISOLATED CAPTURE CONTAINER STYLING */
@@ -944,7 +952,7 @@ body.bg-soft {
   letter-spacing: 0.3px;
 }
 
-/* OFFICIAL RINCIAN PEMBAYARAN TABLE (Center Center Cell Alignment, 9pt font) */
+/* OFFICIAL RINCIAN PEMBAYARAN TABLE */
 .ji-table {
   width: 100%;
   border-collapse: collapse;
@@ -978,7 +986,7 @@ body.bg-soft {
   vertical-align: middle;
 }
 
-/* STATEMENTS SECTION (Justified Paragraphs, 9pt font) */
+/* STATEMENTS SECTION (Justified Paragraphs) */
 .ji-statements-block {
   font-size: 9pt;
   color: #000000;
@@ -992,7 +1000,7 @@ body.bg-soft {
   text-align: justify;
 }
 
-/* SIGNATURES ROW (Enlarged signature images to fill space) */
+/* SIGNATURES ROW */
 .ji-signatures-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1169,7 +1177,7 @@ body.bg-soft {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 135px 48px 30px 48px !important;
+    padding: 135px 45px 30px 45px !important;
     transform: none !important;
     page-break-inside: avoid !important;
     overflow: hidden !important;
