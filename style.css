@@ -811,7 +811,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   OPTIMIZED HIGH-DENSITY A4 CONTAINER SYSTEM (COMPACT & BALANCED)
+   OPTIMIZED 175PX TOP PADDING A4 CONTAINER SYSTEM (CONTINUOUS FLUID TABLE)
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -841,7 +841,7 @@ body.bg-soft {
   flex-shrink: 0;
 }
 
-/* INDIVIDUAL A4 PAGE CONTAINER OPTIMIZED FOR COMPACT TABLE SPACING */
+/* INDIVIDUAL A4 PAGE CONTAINER OPTIMIZED FOR 175PX TOP PADDING */
 .doc-printable-page {
   width: 794px !important;
   height: 1120px !important;
@@ -852,7 +852,7 @@ body.bg-soft {
   background-color: #ffffff;
   border: none !important;
   outline: none !important;
-  padding: 125px 45px 25px 45px;
+  padding: 175px 45px 25px 45px !important;
   color: #000000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-family: 'Mulish', sans-serif;
@@ -863,7 +863,7 @@ body.bg-soft {
 }
 
 .doc-printable-page.page-subsequent {
-  padding-top: 125px;
+  padding-top: 175px !important;
 }
 
 /* ISOLATED CAPTURE CONTAINER STYLING */
@@ -1184,7 +1184,7 @@ body.bg-soft {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 125px 45px 25px 45px !important;
+    padding: 175px 45px 25px 45px !important;
     transform: none !important;
     page-break-inside: avoid !important;
     overflow: hidden !important;
