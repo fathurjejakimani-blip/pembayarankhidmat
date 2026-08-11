@@ -811,7 +811,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   PERFECT ZERO-SPILLOVER A4 PREVIEW & PDF CONTAINER SYSTEM
+   DYNAMIC CSS PAGE BREAK & SINGLE-CONTAINER A4 DOCUMENT SYSTEM
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -832,38 +832,19 @@ body.bg-soft {
 
 .doc-printable-wrapper {
   width: 794px !important;
+  min-height: 1123px;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 135px 45px 45px 45px;
   transform: none !important;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   flex-shrink: 0;
-}
-
-/* INDIVIDUAL A4 PAGE CONTAINER (1120px height safely prevents 1px sub-pixel overflow into a blank spillover page) */
-.doc-printable-page {
-  width: 794px !important;
-  height: 1120px !important;
-  min-height: 1120px !important;
-  max-height: 1120px !important;
-  overflow: hidden !important;
-  flex-shrink: 0;
-  background-color: #ffffff;
-  border: none !important;
-  outline: none !important;
-  padding: 135px 45px 30px 45px;
-  color: #000000;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  font-family: 'Mulish', sans-serif;
   position: relative;
   box-sizing: border-box !important;
-  page-break-inside: avoid !important;
-  margin: 0 !important;
-}
-
-.doc-printable-page.page-subsequent {
-  padding-top: 135px;
+  color: #000000;
+  font-family: 'Mulish', sans-serif;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
 /* ISOLATED CAPTURE CONTAINER STYLING */
@@ -887,7 +868,7 @@ body.bg-soft {
   top: 0;
   left: 0;
   width: 794px !important;
-  height: 1120px !important;
+  height: 1123px !important;
   object-fit: fill;
   z-index: 0;
   pointer-events: none;
@@ -956,7 +937,7 @@ body.bg-soft {
   letter-spacing: 0.3px;
 }
 
-/* OFFICIAL RINCIAN PEMBAYARAN TABLE */
+/* OFFICIAL RINCIAN PEMBAYARAN TABLE WITH AUTOMATIC PAGE BREAK RULES */
 .ji-table {
   width: 100%;
   border-collapse: collapse;
@@ -964,6 +945,21 @@ body.bg-soft {
   color: #000000;
   margin-bottom: 18px;
   border: 1px solid #000000;
+}
+
+.ji-table thead {
+  display: table-header-group;
+}
+
+.ji-table tfoot {
+  display: table-footer-group;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.ji-table tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .ji-table th {
@@ -978,7 +974,6 @@ body.bg-soft {
 .ji-table td {
   border: 1px solid #000000;
   padding: 8px 10px;
-  text-align: center;
   vertical-align: middle;
 }
 
@@ -990,13 +985,15 @@ body.bg-soft {
   vertical-align: middle;
 }
 
-/* STATEMENTS SECTION (Justified Paragraphs) */
+/* STATEMENTS SECTION (Justified Paragraphs with Page Break Protection) */
 .ji-statements-block {
   font-size: 9pt;
   color: #000000;
   line-height: 1.6;
   margin-bottom: 24px;
   text-align: justify;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .ji-statements-block p {
@@ -1004,7 +1001,7 @@ body.bg-soft {
   text-align: justify;
 }
 
-/* SIGNATURES ROW */
+/* SIGNATURES ROW WITH PAGE BREAK PROTECTION */
 .ji-signatures-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1012,6 +1009,8 @@ body.bg-soft {
   margin-top: 24px;
   text-align: center;
   font-size: 9pt;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .ji-sig-box {
@@ -1171,24 +1170,9 @@ body.bg-soft {
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 135px 45px 45px 45px !important;
     transform: none !important;
     background: #ffffff !important;
-  }
-  .doc-printable-page {
-    width: 210mm !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
-    max-height: 297mm !important;
-    box-shadow: none !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 135px 45px 30px 45px !important;
-    transform: none !important;
-    page-break-inside: avoid !important;
-    overflow: hidden !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
   .ji-bg-letterhead-img {
     display: block !important;
