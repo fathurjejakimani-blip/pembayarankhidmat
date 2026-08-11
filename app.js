@@ -206,7 +206,7 @@ function showLoadingRecipientState() {
   }
 }
 
-// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC WITH SAFE FALLBACK
+// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC WITH INTELLIGENT TEXT PARSER
 async function fetchFromGoogleSheets() {
   isLoadingSheets = true;
 
@@ -227,15 +227,36 @@ async function fetchFromGoogleSheets() {
         if (Array.isArray(data) && data.length > 0) {
           const sheetVouchers = data.map(item => {
             let rincianList = item.rincian;
+            
+            // Smart Multiline Text Parser for Column H (rincianPembayaran)
             if (!Array.isArray(rincianList) || rincianList.length === 0) {
               if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
                 const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
                 rincianList = lines.map((line, idx) => {
+                  let cleanLine = line.replace(/^\d+\.\s*/, '').trim();
+                  let keb = cleanLine;
+                  let ket = 'Rincian Pengeluaran';
+                  let nom = idx === 0 ? (parseFloat(item.totalNominal) || 0) : 0;
+
+                  // Extract SAR Nominal at end of line if present e.g. (SAR 1234)
+                  const sarMatch = cleanLine.match(/\(SAR\s*([\d\.,]+)\)$/i);
+                  if (sarMatch) {
+                    nom = parseFloat(sarMatch[1].replace(/\./g, '').replace(',', '.')) || 0;
+                    keb = cleanLine.replace(/\(SAR\s*[\d\.,]+\)$/i, '').trim();
+                  }
+
+                  // Separate Kebutuhan Grup and Keterangan if separated by ' - '
+                  if (keb.includes(' - ')) {
+                    const parts = keb.split(' - ');
+                    keb = parts[0].trim();
+                    ket = parts.slice(1).join(' - ').trim();
+                  }
+
                   return {
                     no: idx + 1,
-                    kebutuhanGrup: line.replace(/^\d+\.\s*/, ''),
-                    keterangan: 'Rincian Pengeluaran',
-                    nominal: idx === 0 ? (parseFloat(item.totalNominal) || 0) : 0
+                    kebutuhanGrup: keb,
+                    keterangan: ket,
+                    nominal: nom
                   };
                 });
               } else {
@@ -928,28 +949,29 @@ function checkCanSubmit() {
   }
 }
 
-// ==================== 4. DYNAMIC A4 PAGE DOCUMENT GENERATOR ====================
+// ==================== 4. PERFECT DYNAMIC A4 DOCUMENT GENERATOR ====================
 function generateDocumentHTML(v) {
   const isSigned = v.status === 'Sudah Ditandatangani';
   const bgSrc = bgLetterheadBase64 || '/bg-letterhead.png';
   const ttdDiserahkanSrc = ttdDiserahkanBase64 || '/ttd-diserahkan.png';
 
-  const itemsPerPage = 7;
+  const itemsPerPageFirst = 5; // Max 5 items on Page 1 to ensure signatures & statements fit without cutoff
+  const itemsPerPageSubsequent = 8;
   const rincianList = v.rincian || [];
 
-  // SINGLE PAGE DOC (<= 7 items) - GUARANTEES EXACT 1 PAGE A4 (NO 2ND PAGE EVER CREATED)
-  if (rincianList.length <= itemsPerPage) {
+  // SINGLE PAGE DOCUMENT (<= 5 items) - GUARANTEES EXACT 1 PAGE A4 WITH NO EXTRA PAGES & FULL SIGNATURE VISIBILITY
+  if (rincianList.length <= itemsPerPageFirst) {
     const rincianRows = rincianList.map((item, idx) => `
       <tr>
         <td>${idx + 1}</td>
-        <td style="font-weight: 500;">${item.kebutuhanGrup || item.keterangan || '-'}</td>
+        <td style="font-weight: 500;">${item.kebutuhanGrup || '-'}</td>
         <td>${item.keterangan || '-'}</td>
         <td style="font-weight: 600;">${formatSAR(item.nominal)}</td>
       </tr>
     `).join('');
 
     return `
-      <div class="doc-printable-page">
+      <div class="doc-printable-page page-1">
         <img src="${bgSrc}" alt="Letterhead Background" class="ji-bg-letterhead-img">
         <div class="doc-inner-content">
           <div class="ji-doc-title-block">
@@ -1014,58 +1036,85 @@ function generateDocumentHTML(v) {
     `;
   }
 
-  // MULTI-PAGE DOC (> 7 items) - EACH PAGE GETS FULL LETTERHEAD BACKGROUND
-  const pages = [];
-  for (let i = 0; i < rincianList.length; i += itemsPerPage) {
-    pages.push(rincianList.slice(i, i + itemsPerPage));
+  // MULTI-PAGE DOCUMENT (> 5 items) - NO REPETITION OF TITLE & META ON PAGE 2
+  const page1Items = rincianList.slice(0, itemsPerPageFirst);
+  const remainingItems = rincianList.slice(itemsPerPageFirst);
+  
+  const subsequentPages = [];
+  for (let i = 0; i < remainingItems.length; i += itemsPerPageSubsequent) {
+    subsequentPages.push(remainingItems.slice(i, i + itemsPerPageSubsequent));
   }
 
-  return pages.map((pageItems, pageIdx) => {
-    const isFirstPage = pageIdx === 0;
-    const isLastPage = pageIdx === pages.length - 1;
-    const startNum = pageIdx * itemsPerPage;
+  // Render Page 1 (Title + Meta + Items 1..5)
+  const page1Rows = page1Items.map((item, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td style="font-weight: 500;">${item.kebutuhanGrup || '-'}</td>
+      <td>${item.keterangan || '-'}</td>
+      <td style="font-weight: 600;">${formatSAR(item.nominal)}</td>
+    </tr>
+  `).join('');
 
-    const rincianRows = pageItems.map((item, idx) => `
+  let htmlOut = `
+    <div class="doc-printable-page page-1">
+      <img src="${bgSrc}" alt="Letterhead Background" class="ji-bg-letterhead-img">
+      <div class="doc-inner-content">
+        <div class="ji-doc-title-block">
+          <h1 class="ji-main-title">TANDA TERIMA PEMBAYARAN</h1>
+          <h2 class="ji-sub-title">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</h2>
+        </div>
+
+        <div class="ji-meta-lines">
+          <div class="ji-meta-row"><span class="ji-meta-label">No. Referensi</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.noReferensi}</span></div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Hari, Tanggal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatIndoDate(v.tanggal)}</span></div>
+          <div class="ji-section-heading">INFORMASI PEMBAYARAN</div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Diserahkan oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diserahkanOleh || 'Fathur Rahman Al Masyi'}</span></div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Diterima oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diterimaOleh}</span></div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Wilayah</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.wilayah || 'Madinah'}</span></div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Metode Pembayaran</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.metodePembayaran || 'Cash Riyal'}</span></div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Total Nominal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatSAR(v.totalNominal)}</span></div>
+          <div class="ji-meta-row"><span class="ji-meta-label">Terbilang</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">“${v.terbilang}”</span></div>
+        </div>
+
+        <div class="ji-section-heading">RINCIAN PEMBAYARAN</div>
+
+        <table class="ji-table">
+          <thead>
+            <tr>
+              <th style="width: 35px;">No</th>
+              <th style="width: 40%;">Kebutuhan Grup</th>
+              <th>Keterangan</th>
+              <th style="width: 95px;">Nominal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${page1Rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // Render Continuation Pages (DIRECTLY CONTINUES DATA WITHOUT REPEATING TITLE & META DATA)
+  subsequentPages.forEach((subItems, subIdx) => {
+    const isLast = subIdx === subsequentPages.length - 1;
+    const startNum = itemsPerPageFirst + (subIdx * itemsPerPageSubsequent);
+
+    const subRows = subItems.map((item, idx) => `
       <tr>
         <td>${startNum + idx + 1}</td>
-        <td style="font-weight: 500;">${item.kebutuhanGrup || item.keterangan || '-'}</td>
+        <td style="font-weight: 500;">${item.kebutuhanGrup || '-'}</td>
         <td>${item.keterangan || '-'}</td>
         <td style="font-weight: 600;">${formatSAR(item.nominal)}</td>
       </tr>
     `).join('');
 
-    return `
-      <div class="doc-printable-page">
+    htmlOut += `
+      <div class="doc-printable-page page-subsequent" style="page-break-before: always;">
         <img src="${bgSrc}" alt="Letterhead Background" class="ji-bg-letterhead-img">
-        <div class="doc-inner-content">
-          ${isFirstPage ? `
-            <div class="ji-doc-title-block">
-              <h1 class="ji-main-title">TANDA TERIMA PEMBAYARAN</h1>
-              <h2 class="ji-sub-title">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</h2>
-            </div>
-            <div class="ji-meta-lines">
-              <div class="ji-meta-row"><span class="ji-meta-label">No. Referensi</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.noReferensi}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Hari, Tanggal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatIndoDate(v.tanggal)}</span></div>
-              <div class="ji-section-heading">INFORMASI PEMBAYARAN</div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Diserahkan oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diserahkanOleh || 'Fathur Rahman Al Masyi'}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Diterima oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diterimaOleh}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Wilayah</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.wilayah || 'Madinah'}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Metode Pembayaran</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.metodePembayaran || 'Cash Riyal'}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Total Nominal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatSAR(v.totalNominal)}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Terbilang</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">“${v.terbilang}”</span></div>
-            </div>
-          ` : `
-            <div class="ji-doc-title-block">
-              <h1 class="ji-main-title">TANDA TERIMA PEMBAYARAN</h1>
-              <h2 class="ji-sub-title">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia (Halaman ${pageIdx + 1}/${pages.length})</h2>
-            </div>
-            <div class="ji-meta-lines">
-              <div class="ji-meta-row"><span class="ji-meta-label">No. Referensi</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.noReferensi}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Diterima oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diterimaOleh}</span></div>
-            </div>
-          `}
+        <div class="doc-inner-content" style="margin-top: 5mm;">
 
-          <div class="ji-section-heading">RINCIAN PEMBAYARAN ${!isFirstPage ? '(LANJUTAN)' : ''}</div>
+          <div class="ji-section-heading" style="margin-bottom: 8px;">RINCIAN PEMBAYARAN (LANJUTAN)</div>
 
           <table class="ji-table">
             <thead>
@@ -1077,9 +1126,9 @@ function generateDocumentHTML(v) {
               </tr>
             </thead>
             <tbody>
-              ${rincianRows}
+              ${subRows}
             </tbody>
-            ${isLastPage ? `
+            ${isLast ? `
               <tfoot>
                 <tr>
                   <td colspan="3" style="text-align: center; font-weight: 800;">TOTAL</td>
@@ -1089,7 +1138,7 @@ function generateDocumentHTML(v) {
             ` : ''}
           </table>
 
-          ${isLastPage ? `
+          ${isLast ? `
             <div class="ji-statements-block">
               <p>Bahwa Pihak Pertama telah menyerahkan dana dengan total nominal tersebut diatas kepada Pihak Kedua. Pihak Kedua menyatakan telah menerima dana tersebut secara lengkap dan benar sesuai dengan rincian pengeluaran di atas untuk alokasi operasional saudi.</p>
               <p>Dokumen ini disetujui dan ditandatangani secara elektronik/digital serta berlaku sebagai bukti pembayaran yang sah bagi kedua belah pihak.</p>
@@ -1113,7 +1162,9 @@ function generateDocumentHTML(v) {
         </div>
       </div>
     `;
-  }).join('');
+  });
+
+  return htmlOut;
 }
 
 // ==================== 5. GOOGLE SHEETS SYNC ====================
@@ -1141,7 +1192,7 @@ function postToGoogleSheets(v) {
   }).catch(err => console.log('Sheets Sync Notice:', err));
 }
 
-// ==================== 6. GUARANTEED 100% MULTI-PAGE & SINGLE-PAGE PDF RENDERER ====================
+// ==================== 6. GUARANTEED 100% PERFECT SYMMETRICAL PDF RENDERER ====================
 function downloadPDF(voucher, callback) {
   if (!voucher) return;
 
