@@ -999,7 +999,7 @@ function chunkRincianItemsSmart(rincianList) {
     
     // Page 1 capacity: 15.5 points (fills Page 1 down to bottom padding 25px without leaving empty space)
     // Page 2+ capacity: 18 points (fills Page 2 down to bottom padding 25px alongside signatures)
-    const maxCapacity = isFirstPage ? 28 : 28;
+    const maxCapacity = isFirstPage ? 26 : 26;
 
     if (currentPoints + weight > maxCapacity && currentPage.length > 0) {
       pages.push(currentPage);
