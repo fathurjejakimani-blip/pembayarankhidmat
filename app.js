@@ -411,6 +411,9 @@ function setup2FingerPinchZoom() {
     let currentScale = 1;
     let initialScale = 1;
 
+    doc.style.transform = 'scale(1)';
+    doc.style.transformOrigin = 'top left';
+
     vp.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
         initialDist = Math.hypot(
@@ -429,9 +432,9 @@ function setup2FingerPinchZoom() {
           e.touches[0].clientY - e.touches[1].clientY
         );
         const factor = dist / initialDist;
-        currentScale = Math.min(Math.max(0.5, initialScale * factor), 2.5);
+        currentScale = Math.min(Math.max(0.4, initialScale * factor), 3.0);
         doc.style.transform = `scale(${currentScale})`;
-        doc.style.transformOrigin = 'top center';
+        doc.style.transformOrigin = 'top left';
       }
     }, { passive: false });
 
@@ -896,6 +899,8 @@ function renderRecipientView(v) {
       downloadPDF(currentVoucher, e.currentTarget);
     };
   }
+
+  setup2FingerPinchZoom();
 }
 
 // ==================== 3. EXPANDED CANVAS SIGNATURE PAD LOGIC ====================
