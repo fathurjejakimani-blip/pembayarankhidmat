@@ -838,7 +838,7 @@ function renderRecipientView(v) {
             } else {
               signatureDataUrl = transparentDataUrl;
               if (sigStatusEl) {
-                sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Pemindaian Foto TTD Berhasil (Transparan)</span>`;
+                sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Pemindaian Foto TTD Berhasil (Transparan & Kontras)</span>`;
               }
               checkCanSubmit();
             }
@@ -948,14 +948,13 @@ function captureAndProcessViewfinderSignature() {
   const vRect = video.getBoundingClientRect();
   const vfRect = viewfinder.getBoundingClientRect();
 
-  // Compute viewfinder box coordinates relative to video element
   const scaleX = video.videoWidth / vRect.width;
   const scaleY = video.videoHeight / vRect.height;
 
-  const cropX = Math.round((vfRect.left - vRect.left) * scaleX);
-  const cropY = Math.round((vfRect.top - vRect.top) * scaleY);
-  const cropW = Math.round(vfRect.width * scaleX);
-  const cropH = Math.round(vfRect.height * scaleY);
+  const cropX = Math.max(0, Math.round((vfRect.left - vRect.left) * scaleX));
+  const cropY = Math.max(0, Math.round((vfRect.top - vRect.top) * scaleY));
+  const cropW = Math.min(video.videoWidth - cropX, Math.round(vfRect.width * scaleX));
+  const cropH = Math.min(video.videoHeight - cropY, Math.round(vfRect.height * scaleY));
 
   const canvas = document.createElement('canvas');
   canvas.width = cropW;
@@ -981,7 +980,7 @@ function captureAndProcessViewfinderSignature() {
       } else {
         signatureDataUrl = transparentDataUrl;
         if (sigStatusEl) {
-          sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Pemindaian Bingkai TTD Berhasil (Transparan)</span>`;
+          sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> TTD Transparan & Kontras Berhasil Diproses</span>`;
         }
         checkCanSubmit();
       }
@@ -990,12 +989,12 @@ function captureAndProcessViewfinderSignature() {
   img.src = canvas.toDataURL('image/png');
 }
 
-// AUTOMATIC INK THRESHOLDING, AUTO-CROP & TRANSPARENCY CONVERTER
+// ADAPTIVE BACKGROUND PAPER REMOVAL, HIGH-CONTRAST BINARIZATION & TIGHT AUTO-CROP
 function processImageSignature(img, callback) {
   const canvas = document.createElement('canvas');
   let width = img.width;
   let height = img.height;
-  const maxDim = 1200;
+  const maxDim = 1400;
 
   if (width > maxDim || height > maxDim) {
     if (width > height) {
@@ -1015,24 +1014,43 @@ function processImageSignature(img, callback) {
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
 
+  // Step 1: Compute Luminance Map & Determine Paper Background Threshold dynamically
+  const totalPixels = width * height;
+  const lums = new Float32Array(totalPixels);
+
+  for (let i = 0; i < totalPixels; i++) {
+    const idx = i * 4;
+    const r = data[idx];
+    const g = data[idx + 1];
+    const b = data[idx + 2];
+    lums[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  // Find 85th percentile brightness level (representing the paper background)
+  const sortedLums = new Float32Array(lums).sort();
+  const bgLevel = sortedLums[Math.floor(sortedLums.length * 0.85)];
+
   let minX = width;
   let maxX = 0;
   let minY = height;
   let maxY = 0;
   let inkPixelCount = 0;
 
+  // Step 2: Binarize Ink vs Paper Background (Force 100% Alpha Transparency for Paper)
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
+      const i = y * width + x;
+      const idx = i * 4;
       const r = data[idx];
       const g = data[idx + 1];
       const b = data[idx + 2];
+      const lum = lums[i];
 
-      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const diffFromBg = bgLevel - lum;
       const isBlueInk = (b > r + 15 && b > g + 15);
-      const isDarkInk = (lum < 165);
+      const isInk = (diffFromBg > 20) || isBlueInk;
 
-      if (isDarkInk || isBlueInk) {
+      if (isInk) {
         inkPixelCount++;
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
@@ -1040,28 +1058,31 @@ function processImageSignature(img, callback) {
         if (y > maxY) maxY = y;
 
         if (isBlueInk) {
-          data[idx] = Math.max(0, r - 30);
-          data[idx + 1] = Math.max(0, g - 30);
-          data[idx + 2] = Math.min(255, b + 20);
+          // Sharp Royal Blue Ink Accent
+          data[idx] = 15;
+          data[idx + 1] = 40;
+          data[idx + 2] = 185;
         } else {
-          const darkVal = Math.max(0, Math.round(lum * 0.6));
-          data[idx] = darkVal;
-          data[idx + 1] = darkVal;
-          data[idx + 2] = darkVal;
+          // Sharp Deep Solid Black Ink Accent
+          data[idx] = 0;
+          data[idx + 1] = 0;
+          data[idx + 2] = 0;
         }
-        data[idx + 3] = 255;
+        data[idx + 3] = 255; // Fully Opaque Ink
       } else {
-        data[idx + 3] = 0; // 100% Transparent Background
+        // Paper background -> 100% Transparent PNG (Alpha = 0)
+        data[idx + 3] = 0;
       }
     }
   }
 
-  if (inkPixelCount < 15 || minX >= maxX || minY >= maxY) {
-    callback(null, 'Tanda tangan tidak terdeteksi di dalam bingkai. Mohon posisikan tanda tangan di dalam bingkai hijau dengan kertas terang.');
+  if (inkPixelCount < 10 || minX >= maxX || minY >= maxY) {
+    callback(null, 'Tanda tangan tidak terdeteksi. Mohon posisikan tanda tangan di dalam bingkai hijau.');
     return;
   }
 
-  const pad = 10;
+  // Step 3: Tight Crop Around Detected Ink Bounding Box
+  const pad = 8;
   const cropX = Math.max(0, minX - pad);
   const cropY = Math.max(0, minY - pad);
   const cropW = Math.min(width - cropX, (maxX - minX) + (pad * 2));
