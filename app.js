@@ -261,7 +261,7 @@ async function fetchFromGoogleSheets() {
             };
           });
 
-          // 100% Direct Live Sync from Google Sheets (No Hardcoded Sample Merging)
+          // 100% Direct Live Sync from Google Sheets
           vouchers = sheetVouchers;
           saveVouchersLocal();
         }
@@ -316,7 +316,7 @@ function setupGlobalEventDelegation() {
       const sigStatusEl = document.getElementById('sig-preview-status');
       if (sigStatusEl) {
         sigStatusEl.innerHTML = `
-          <span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Tanda Tangan Tersimpan & Siap Disetujui</span>
+          <span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Tanda Tangan Canvas Tersimpan & Siap Disetujui</span>
         `;
       }
       checkCanSubmit();
@@ -738,7 +738,7 @@ function showPreviewModal(voucher) {
   setup2FingerPinchZoom();
 }
 
-// ==================== 2. RECIPIENT PORTAL LOGIC ====================
+// ==================== 2. RECIPIENT PORTAL LOGIC & CAMERA SIGNATURE PROCESSING ====================
 function initRecipientPortal(id) {
   currentVoucher = vouchers.find(v => v.id === id || v.noReferensi === id);
   if (currentVoucher) {
@@ -778,6 +778,56 @@ function renderRecipientView(v) {
   const chkAgreement = document.getElementById('chk-agreement');
   if (chkAgreement) {
     chkAgreement.onchange = checkCanSubmit;
+  }
+
+  // Camera Signature Trigger & Processing Event Handlers
+  const btnTriggerCamera = document.getElementById('btn-trigger-camera');
+  const cameraFileInput = document.getElementById('camera-file-input');
+
+  if (btnTriggerCamera && cameraFileInput) {
+    btnTriggerCamera.onclick = () => cameraFileInput.click();
+
+    cameraFileInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const sigStatusEl = document.getElementById('sig-preview-status');
+      if (sigStatusEl) {
+        sigStatusEl.innerHTML = `
+          <span style="color: #1e3a8a; font-weight: 700; font-size: 11px;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Memproses foto & menghapus background...
+          </span>
+        `;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          processCameraSignature(img, (transparentDataUrl, errorMsg) => {
+            if (errorMsg) {
+              alert(errorMsg);
+              if (sigStatusEl) {
+                sigStatusEl.innerHTML = `<span style="color: #e11d48; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> ${errorMsg}</span>`;
+              }
+              signatureDataUrl = null;
+            } else {
+              signatureDataUrl = transparentDataUrl;
+              if (sigStatusEl) {
+                sigStatusEl.innerHTML = `
+                  <span style="font-weight: 700; color: #059669; font-size: 11px;">
+                    <i class="fa-solid fa-camera-retro"></i> Foto TTD Berhasil Diproses (Transparan)
+                  </span>
+                `;
+              }
+              checkCanSubmit();
+            }
+          });
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
   }
 
   const recipientForm = document.getElementById('recipient-form');
@@ -830,6 +880,95 @@ function renderRecipientView(v) {
   }
 
   setup2FingerPinchZoom();
+}
+
+// AUTOMATIC CAMERA SIGNATURE INK THRESHOLDING, AUTO-CROP & TRANSPARENCY CONVERTER
+function processCameraSignature(img, callback) {
+  const canvas = document.createElement('canvas');
+  let width = img.width;
+  let height = img.height;
+  const maxDim = 1200;
+
+  if (width > maxDim || height > maxDim) {
+    if (width > height) {
+      height = Math.round((height * maxDim) / width);
+      width = maxDim;
+    } else {
+      width = Math.round((width * maxDim) / height);
+      height = maxDim;
+    }
+  }
+
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const imgData = ctx.getImageData(0, 0, width, height);
+  const data = imgData.data;
+
+  let minX = width;
+  let maxX = 0;
+  let minY = height;
+  let maxY = 0;
+  let inkPixelCount = 0;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+
+      const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+      const isBlueInk = (b > r + 15 && b > g + 15);
+      const isDarkInk = (lum < 165);
+
+      if (isDarkInk || isBlueInk) {
+        inkPixelCount++;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+
+        if (isBlueInk) {
+          data[idx] = Math.max(0, r - 30);
+          data[idx + 1] = Math.max(0, g - 30);
+          data[idx + 2] = Math.min(255, b + 20);
+        } else {
+          const darkVal = Math.max(0, Math.round(lum * 0.6));
+          data[idx] = darkVal;
+          data[idx + 1] = darkVal;
+          data[idx + 2] = darkVal;
+        }
+        data[idx + 3] = 255;
+      } else {
+        data[idx + 3] = 0; // 100% Transparent Background
+      }
+    }
+  }
+
+  if (inkPixelCount < 20 || minX >= maxX || minY >= maxY) {
+    callback(null, 'Tanda tangan tidak terdeteksi pada foto. Mohon foto kertas putih dengan pencahayaan terang.');
+    return;
+  }
+
+  const pad = 12;
+  const cropX = Math.max(0, minX - pad);
+  const cropY = Math.max(0, minY - pad);
+  const cropW = Math.min(width - cropX, (maxX - minX) + (pad * 2));
+  const cropH = Math.min(height - cropY, (maxY - minY) + (pad * 2));
+
+  ctx.putImageData(imgData, 0, 0);
+
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width = cropW;
+  cropCanvas.height = cropH;
+  const cropCtx = cropCanvas.getContext('2d');
+
+  cropCtx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  callback(cropCanvas.toDataURL('image/png'), null);
 }
 
 // ==================== 3. EXPANDED CANVAS SIGNATURE PAD LOGIC ====================
