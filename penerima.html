@@ -64,14 +64,14 @@
               </label>
             </div>
 
-            <!-- BUTTON FOR ENLARGED CANVAS SIGNATURE POPUP & CAMERA FOTO TTD -->
+            <!-- BUTTON FOR ENLARGED CANVAS SIGNATURE POPUP & LIVE SCANNER CAMERA -->
             <div class="form-group margin-top-xs">
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                 <button type="button" id="btn-open-canvas-modal" class="btn btn-outline btn-block btn-sm" style="font-size: 11px; padding: 10px 4px;">
                   <i class="fa-solid fa-pen-nib text-navy"></i> Canvas TTD
                 </button>
                 <button type="button" id="btn-trigger-camera" class="btn btn-outline btn-block btn-sm" style="font-size: 11px; padding: 10px 4px;">
-                  <i class="fa-solid fa-camera text-navy"></i> Foto TTD
+                  <i class="fa-solid fa-camera text-navy"></i> Foto & Pindai TTD
                 </button>
               </div>
               <input type="file" id="camera-file-input" accept="image/*" capture="environment" class="hidden">
@@ -105,6 +105,34 @@
       </div>
 
     </main>
+
+    <!-- POPUP MODAL: LIVE CAMERA SIGNATURE SCANNER WITH SCANNING VIEWFINDER -->
+    <div id="modal-camera-scanner-overlay" class="modal-overlay hidden">
+      <div class="camera-modal-card">
+        <div class="sheet-title-row border-bottom">
+          <h3><i class="fa-solid fa-camera-retro text-navy"></i> Pindai Tanda Tangan Basah</h3>
+          <button type="button" id="btn-close-camera-modal" class="btn-icon-close">&times;</button>
+        </div>
+
+        <!-- LIVE VIDEO VIEWPORT WITH SCANNING VIEWFINDER OVERLAY -->
+        <div class="camera-viewport-wrapper">
+          <video id="camera-scanner-video" autoplay playsinline muted></video>
+          <div id="camera-viewfinder" class="camera-viewfinder">
+            <div class="scan-line"></div>
+            <div class="viewfinder-corner top-left"></div>
+            <div class="viewfinder-corner top-right"></div>
+            <div class="viewfinder-corner bottom-left"></div>
+            <div class="viewfinder-corner bottom-right"></div>
+            <span class="viewfinder-hint">Posisikan TTD di dalam bingkai</span>
+          </div>
+        </div>
+
+        <div class="modal-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" id="btn-switch-camera" class="btn btn-outline" style="flex: 1;"><i class="fa-solid fa-arrows-rotate"></i> Putar Kamera</button>
+          <button type="button" id="btn-capture-camera" class="btn btn-navy" style="flex: 2;"><i class="fa-solid fa-circle-dot"></i> Ambil Foto & Pindai</button>
+        </div>
+      </div>
+    </div>
 
     <!-- POPUP MODAL: LARGE CANVAS SIGNATURE PAD -->
     <div id="modal-canvas-overlay" class="modal-overlay hidden">
