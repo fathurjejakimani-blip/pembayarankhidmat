@@ -226,12 +226,11 @@ function cleanAndParseRincianItem(item, fallbackNominal = 0) {
   return { kebutuhanGrup: keb, keterangan: ket, nominal: nom };
 }
 
-// SAFARI-COMPATIBLE GOOGLE SHEETS LIVE SYNC
+// SAFARI-COMPATIBLE GOOGLE SHEETS LIVE SYNC WITH FULL SIGNATURE SYNC
 async function fetchFromGoogleSheets() {
   isLoadingSheets = true;
 
   const controller = new AbortController();
-  // 12-second extended timeout for mobile Safari connections over 4G/Wi-Fi
   const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
@@ -278,9 +277,24 @@ async function fetchFromGoogleSheets() {
           const calculatedTotal = rincianList.reduce((acc, curr) => acc + (curr.nominal || 0), 0);
           const finalTotalNominal = calculatedTotal > 0 ? calculatedTotal : headerTotalNominal;
 
+          // Signature Sync: Read from Google Sheets or Local Signature Store
           const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
+          const sheetSig = item.tandaTanganUrl || item.tandaTangan || (savedSig ? savedSig.tandaTanganUrl : null);
           const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
-          const isSigned = isSignedLocally || item.status === 'Sudah Ditandatangani';
+          const isSigned = (sheetSig && sheetSig.trim() !== '') || isSignedLocally || item.status === 'Sudah Ditandatangani';
+
+          const sigUrl = (sheetSig && sheetSig.trim() !== '') ? sheetSig : (savedSig ? savedSig.tandaTanganUrl : null);
+          const sigDate = item.tanggalDitandatangani || (savedSig ? savedSig.tanggalDitandatangani : null);
+
+          // Update local signature store if signature arrived from Google Sheets
+          if (sigUrl && sigUrl.trim() !== '') {
+            signaturesStore[item.id] = {
+              tandaTanganUrl: sigUrl,
+              tanggalDitandatangani: sigDate || new Date().toISOString(),
+              status: 'Sudah Ditandatangani'
+            };
+            signaturesStore[item.noReferensi] = signaturesStore[item.id];
+          }
 
           return {
             id: item.id || item.noReferensi,
@@ -294,12 +308,13 @@ async function fetchFromGoogleSheets() {
             totalNominal: finalTotalNominal,
             terbilang: item.terbilang || terbilang(finalTotalNominal),
             status: isSigned ? 'Sudah Ditandatangani' : (item.status || 'Menunggu Tanda Tangan'),
-            tandaTanganUrl: savedSig ? savedSig.tandaTanganUrl : (item.tandaTanganUrl || null),
-            tanggalDitandatangani: savedSig ? savedSig.tanggalDitandatangani : (item.tanggalDitandatangani || null)
+            tandaTanganUrl: sigUrl || null,
+            tanggalDitandatangani: sigDate || null
           };
         });
 
         vouchers = sheetVouchers;
+        localStorage.setItem(SIGNATURES_KEY, JSON.stringify(signaturesStore));
         saveVouchersLocal();
       }
     }
@@ -317,7 +332,6 @@ async function fetchFromGoogleSheets() {
       if (v) {
         renderRecipientView(v);
       } else {
-        // Guaranteed render fallback so Safari never stays stuck infinitely on loading spinner
         showNotFoundRecipientState(voucherId);
       }
     }
@@ -1458,7 +1472,7 @@ function generateDocumentHTML(v) {
   return htmlOut;
 }
 
-// ==================== 5. GOOGLE SHEETS SYNC ====================
+// ==================== 5. GOOGLE SHEETS SYNC WITH SIGNATURE IMAGE PAYLOAD ====================
 function postToGoogleSheets(v) {
   const rincianText = (v.rincian || []).map(r => `${r.no}. ${r.kebutuhanGrup} - ${r.keterangan} (${formatSAR(r.nominal)})`).join('\n');
 
@@ -1472,7 +1486,9 @@ function postToGoogleSheets(v) {
     metodePembayaran: v.metodePembayaran || 'Cash Riyal',
     rincianPembayaran: rincianText,
     totalNominal: v.totalNominal,
-    status: v.status
+    status: v.status,
+    tandaTanganUrl: v.tandaTanganUrl || '',
+    tanggalDitandatangani: v.tanggalDitandatangani || ''
   };
 
   fetch(SCRIPT_URL, {
