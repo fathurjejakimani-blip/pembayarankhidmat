@@ -1102,6 +1102,90 @@ body.bg-soft {
   pointer-events: none;
 }
 
+/* LIVE CAMERA SCANNER VIEWFINDER OVERLAY STYLING */
+.camera-modal-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  width: 95%;
+  max-width: 520px;
+  padding: 18px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+  margin: auto;
+}
+
+.camera-viewport-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #000000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+#camera-scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.camera-viewfinder {
+  position: absolute;
+  top: 15%;
+  left: 10%;
+  right: 10%;
+  bottom: 15%;
+  border: 2px dashed #059669;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+}
+
+.viewfinder-hint {
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.65);
+  padding: 4px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #10b981, #059669, #10b981, transparent);
+  box-shadow: 0 0 12px #10b981;
+  animation: scanLaser 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes scanLaser {
+  0% { top: 4px; }
+  100% { top: calc(100% - 7px); }
+}
+
+.viewfinder-corner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: #10b981;
+  border-style: solid;
+}
+
+.viewfinder-corner.top-left { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 10px; }
+.viewfinder-corner.top-right { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 10px; }
+.viewfinder-corner.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 10px; }
+.viewfinder-corner.bottom-right { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 10px; }
+
 /* RECIPIENT COMPACT FORM CARD WIDGET */
 .compact-card {
   padding: 12px 14px;
