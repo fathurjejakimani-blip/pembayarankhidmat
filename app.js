@@ -3,69 +3,15 @@
    ========================================================================== */
 
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz3A7kYSe8LnYmNmVyqGzNAG78oeTj5Uqff41pbK4NKfM2UDUYZnuceYEp0LEKzanFllQ/exec';
-const STORAGE_KEY = 'bukti_pembayaran_jejakimani_sheets_live_v2';
+const STORAGE_KEY = 'bukti_pembayaran_jejakimani_sheets_live_v3';
 const SIGNATURES_KEY = 'bukti_pembayaran_signatures_store';
 const MASTER_KEY = 'bukti_pembayaran_master_data_v1';
 
-// Clear old sample data keys from previous versions
-['bukti_pembayaran_jejakimani_v16', 'bukti_pembayaran_jejakimani_v17', 'bukti_pembayaran_jejakimani_v18', 'bukti_pembayaran_jejakimani_v19', 'bukti_pembayaran_jejakimani_v20', 'bukti_pembayaran_jejakimani_v21', 'bukti_pembayaran_jejakimani_db_v1'].forEach(k => localStorage.removeItem(k));
+// Clear old sample data keys from previous versions to guarantee a clean state
+['bukti_pembayaran_jejakimani_sheets_live_v2', 'bukti_pembayaran_jejakimani_sheets_live_v1', 'bukti_pembayaran_jejakimani_v16', 'bukti_pembayaran_jejakimani_v17', 'bukti_pembayaran_jejakimani_v18', 'bukti_pembayaran_jejakimani_v19', 'bukti_pembayaran_jejakimani_v20', 'bukti_pembayaran_jejakimani_v21', 'bukti_pembayaran_jejakimani_db_v1'].forEach(k => localStorage.removeItem(k));
 
-// Default initial vouchers matching spreadsheet rows
-const DEFAULT_SHEET_VOUCHERS = [
-  {
-    id: 'OUT0001',
-    noReferensi: 'OUT0001',
-    tanggal: '2026-08-11',
-    diserahkanOleh: 'Fathur Rahman Al Masyi',
-    diterimaOleh: 'Abdullah Katering Madinah',
-    wilayah: 'Madinah',
-    metodePembayaran: 'Cash Riyal',
-    rincian: [
-      { no: 1, kebutuhanGrup: 'Umroh Ruby Onyx 02 Agustus 2026 Madinah Awal (9 Hari)', keterangan: 'Snack Check Out Hotel Madinah', nominal: 209 },
-      { no: 2, kebutuhanGrup: 'Umroh Reguler 02 Agustus 2026 Makkah Awal (9 Hari)', keterangan: 'Snack Check Out Hotel Madinah', nominal: 253 },
-      { no: 3, kebutuhanGrup: 'Umroh Private 06 Agustus 2026', keterangan: 'Snack Check Out Hotel Madinah', nominal: 48 }
-    ],
-    totalNominal: 510,
-    terbilang: 'Lima Ratus Sepuluh Saudi Riyal',
-    status: 'Menunggu Tanda Tangan',
-    tandaTanganUrl: null,
-    tanggalDitandatangani: null
-  },
-  {
-    id: 'OUT0002',
-    noReferensi: 'OUT0002',
-    tanggal: '2026-08-11',
-    diserahkanOleh: 'Fathur Rahman Al Masyi',
-    diterimaOleh: 'Ahmad Transport Makkah',
-    wilayah: 'Makkah',
-    metodePembayaran: 'Cash Riyal',
-    rincian: [
-      { no: 1, kebutuhanGrup: 'Sewa Bus Ziarah Makkah - Madinah', keterangan: 'Operasional Transportasi', nominal: 1200 }
-    ],
-    totalNominal: 1200,
-    terbilang: 'Seribu Dua Ratus Saudi Riyal',
-    status: 'Menunggu Tanda Tangan',
-    tandaTanganUrl: null,
-    tanggalDitandatangani: null
-  },
-  {
-    id: 'OUT0003',
-    noReferensi: 'OUT0003',
-    tanggal: '2026-08-11',
-    diserahkanOleh: 'Fathur Rahman Al Masyi',
-    diterimaOleh: 'Syarif Katering Jeddah',
-    wilayah: 'Jeddah',
-    metodePembayaran: 'Cash Riyal',
-    rincian: [
-      { no: 1, kebutuhanGrup: 'Katering Kedatangan Bandara Jeddah', keterangan: 'Makan Malam Jamaah', nominal: 850 }
-    ],
-    totalNominal: 850,
-    terbilang: 'Delapan Ratus Lima Puluh Saudi Riyal',
-    status: 'Menunggu Tanda Tangan',
-    tandaTanganUrl: null,
-    tanggalDitandatangani: null
-  }
-];
+// Default initial vouchers (Clean Empty State - 100% Live Mirror of Google Sheets)
+const DEFAULT_SHEET_VOUCHERS = [];
 
 // App State
 let vouchers = JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_SHEET_VOUCHERS;
@@ -268,7 +214,7 @@ async function fetchFromGoogleSheets() {
       const text = await res.text();
       if (text.startsWith('[') && text.endsWith(']')) {
         const data = JSON.parse(text);
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const sheetVouchers = data.map(item => {
             let rincianList = [];
             const headerTotalNominal = parseFloat(item.totalNominal) || 0;
@@ -315,7 +261,8 @@ async function fetchFromGoogleSheets() {
             };
           });
 
-          vouchers = mergeVouchers(sheetVouchers, vouchers);
+          // 100% Direct Live Sync from Google Sheets (No Hardcoded Sample Merging)
+          vouchers = sheetVouchers;
           saveVouchersLocal();
         }
       }
@@ -341,24 +288,6 @@ async function fetchFromGoogleSheets() {
       if (v) renderRecipientView(v);
     }
   }
-}
-
-function mergeVouchers(sheetsList, localList) {
-  const map = new Map();
-  sheetsList.forEach(v => map.set(v.id, v));
-  localList.forEach(v => {
-    if (!map.has(v.id)) {
-      map.set(v.id, v);
-    } else {
-      const existing = map.get(v.id);
-      if (v.status === 'Sudah Ditandatangani') {
-        existing.status = 'Sudah Ditandatangani';
-        existing.tandaTanganUrl = v.tandaTanganUrl || existing.tandaTanganUrl;
-        existing.tanggalDitandatangani = v.tanggalDitandatangani || existing.tanggalDitandatangani;
-      }
-    }
-  });
-  return Array.from(map.values());
 }
 
 // GLOBAL EVENT DELEGATION WITH DOUBLE-CLICK PROTECTION & SPINNER INDICATOR
