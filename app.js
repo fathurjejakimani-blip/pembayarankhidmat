@@ -25,6 +25,7 @@ let masterData = JSON.parse(localStorage.getItem(MASTER_KEY)) || {
 let currentVoucher = null;
 let selectedVoucher = null;
 let signatureDataUrl = null;
+let tempScannedSigUrl = null;
 let isDrawing = false;
 let isLoadingSheets = false;
 let cameraStream = null;
@@ -740,7 +741,7 @@ function showPreviewModal(voucher) {
   setup2FingerPinchZoom();
 }
 
-// ==================== 2. RECIPIENT PORTAL & LIVE SCANNER CAMERA LOGIC ====================
+// ==================== 2. RECIPIENT PORTAL & LIVE SCANNER PREVIEW LOGIC ====================
 function initRecipientPortal(id) {
   currentVoucher = vouchers.find(v => v.id === id || v.noReferensi === id);
   if (currentVoucher) {
@@ -782,17 +783,20 @@ function renderRecipientView(v) {
     chkAgreement.onchange = checkCanSubmit;
   }
 
-  // Live Camera Scanner Event Handlers
+  // Live Camera Scanner Event Handlers with Preview Step
   const btnTriggerCamera = document.getElementById('btn-trigger-camera');
   const modalCameraOverlay = document.getElementById('modal-camera-scanner-overlay');
   const btnCloseCamera = document.getElementById('btn-close-camera-modal');
   const btnCaptureCamera = document.getElementById('btn-capture-camera');
   const btnSwitchCamera = document.getElementById('btn-switch-camera');
+  const btnRetakeCamera = document.getElementById('btn-retake-camera');
+  const btnUseCameraSig = document.getElementById('btn-use-camera-sig');
   const cameraFileInput = document.getElementById('camera-file-input');
 
   if (btnTriggerCamera) {
     btnTriggerCamera.onclick = () => {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        showCameraLiveState();
         if (modalCameraOverlay) modalCameraOverlay.classList.remove('hidden');
         startCameraScanner();
       } else if (cameraFileInput) {
@@ -814,6 +818,28 @@ function renderRecipientView(v) {
 
   if (btnCaptureCamera) {
     btnCaptureCamera.onclick = captureAndProcessViewfinderSignature;
+  }
+
+  if (btnRetakeCamera) {
+    btnRetakeCamera.onclick = () => {
+      tempScannedSigUrl = null;
+      showCameraLiveState();
+      startCameraScanner();
+    };
+  }
+
+  if (btnUseCameraSig) {
+    btnUseCameraSig.onclick = () => {
+      if (tempScannedSigUrl) {
+        signatureDataUrl = tempScannedSigUrl;
+        stopCameraScanner();
+        const sigStatusEl = document.getElementById('sig-preview-status');
+        if (sigStatusEl) {
+          sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Foto Pemindaian TTD Disetujui & Siap Digunakan</span>`;
+        }
+        checkCanSubmit();
+      }
+    };
   }
 
   if (cameraFileInput) {
@@ -901,6 +927,32 @@ function renderRecipientView(v) {
   setup2FingerPinchZoom();
 }
 
+function showCameraLiveState() {
+  const liveVp = document.getElementById('camera-live-viewport');
+  const liveActions = document.getElementById('camera-live-actions');
+  const prevVp = document.getElementById('camera-preview-viewport');
+  const prevActions = document.getElementById('camera-preview-actions');
+
+  if (liveVp) liveVp.classList.remove('hidden');
+  if (liveActions) liveActions.classList.remove('hidden');
+  if (prevVp) prevVp.classList.add('hidden');
+  if (prevActions) prevActions.classList.add('hidden');
+}
+
+function showCameraPreviewState(previewDataUrl) {
+  const liveVp = document.getElementById('camera-live-viewport');
+  const liveActions = document.getElementById('camera-live-actions');
+  const prevVp = document.getElementById('camera-preview-viewport');
+  const prevActions = document.getElementById('camera-preview-actions');
+  const prevImg = document.getElementById('camera-result-preview-img');
+
+  if (prevImg) prevImg.src = previewDataUrl;
+  if (liveVp) liveVp.classList.add('hidden');
+  if (liveActions) liveActions.classList.add('hidden');
+  if (prevVp) prevVp.classList.remove('hidden');
+  if (prevActions) prevActions.classList.remove('hidden');
+}
+
 // LIVE CAMERA STREAM & SCANNER VIEWFINDER CROPPER
 async function startCameraScanner() {
   stopCameraStreamTracks();
@@ -936,6 +988,7 @@ function stopCameraStreamTracks() {
 
 function stopCameraScanner() {
   stopCameraStreamTracks();
+  tempScannedSigUrl = null;
   const modal = document.getElementById('modal-camera-scanner-overlay');
   if (modal) modal.classList.add('hidden');
 }
@@ -963,26 +1016,18 @@ function captureAndProcessViewfinderSignature() {
 
   ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-  stopCameraScanner();
-
-  const sigStatusEl = document.getElementById('sig-preview-status');
-  if (sigStatusEl) {
-    sigStatusEl.innerHTML = `<span style="color: #1e3a8a; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-spinner fa-spin"></i> Memindahkan TTD & Menghapus Latar Belakang...</span>`;
-  }
+  stopCameraStreamTracks();
 
   const img = new Image();
   img.onload = () => {
     processImageSignature(img, (transparentDataUrl, errorMsg) => {
       if (errorMsg) {
         alert(errorMsg);
-        if (sigStatusEl) sigStatusEl.innerHTML = `<span style="color: #e11d48; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> ${errorMsg}</span>`;
-        signatureDataUrl = null;
+        showCameraLiveState();
+        startCameraScanner();
       } else {
-        signatureDataUrl = transparentDataUrl;
-        if (sigStatusEl) {
-          sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> TTD Transparan & Kontras Berhasil Diproses</span>`;
-        }
-        checkCanSubmit();
+        tempScannedSigUrl = transparentDataUrl;
+        showCameraPreviewState(tempScannedSigUrl);
       }
     });
   };
