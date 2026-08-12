@@ -928,7 +928,23 @@ body.bg-soft {
   margin-top: 4px;
 }
 
-/* META INFORMATION (9pt font size) */
+/* INFORMASI PEMBAYARAN 2-COLUMN GRID LAYOUT */
+.ji-meta-grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  font-size: 9pt;
+  color: #000000;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.ji-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .ji-meta-lines {
   font-size: 9pt;
   color: #000000;
@@ -939,19 +955,27 @@ body.bg-soft {
 .ji-meta-row {
   display: flex;
   margin-bottom: 2px;
+  align-items: flex-start;
 }
 
 .ji-meta-label {
-  width: 140px;
+  width: 115px;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .ji-meta-colon {
-  margin-right: 8px;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
 
 .ji-meta-val {
   font-weight: 600;
+  flex: 1;
+}
+
+.ji-meta-val.font-bold {
+  font-weight: 800;
 }
 
 .ji-section-heading {
