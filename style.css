@@ -811,7 +811,7 @@ body.bg-soft {
 .btn-sm { padding: 6px 12px; font-size: 11px; }
 
 /* ==========================================================================
-   OPTIMIZED 175PX TOP PADDING A4 CONTAINER SYSTEM (CONTINUOUS FLUID TABLE)
+   INTERACTIVE PINCH-ZOOM PREVIEW & ISOLATED 1:1 UNTRANSFORMED PDF CAPTURE
    ========================================================================== */
 .a4-preview-viewport {
   width: 100%;
@@ -828,17 +828,24 @@ body.bg-soft {
   border-radius: var(--radius-sm);
   margin: 0 auto 16px auto;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.18);
+  touch-action: pan-x pan-y pinch-zoom;
 }
 
 .doc-printable-wrapper {
   width: 794px !important;
   margin: 0 !important;
   padding: 0 !important;
-  transform: none !important;
   display: flex;
   flex-direction: column;
   background: #ffffff;
   flex-shrink: 0;
+  transform-origin: top left;
+  transition: transform 0.05s ease-out;
+}
+
+/* ISOLATED CAPTURE CONTAINER FOR PDF DOWNLOAD - ALWAYS UNTRANSFORMED 1:1 */
+#pdf-hidden-capture-container .doc-printable-wrapper {
+  transform: none !important;
 }
 
 /* INDIVIDUAL A4 PAGE CONTAINER OPTIMIZED FOR 175PX TOP PADDING */
