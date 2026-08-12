@@ -1304,16 +1304,22 @@ function generateDocumentHTML(v) {
               <h2 class="ji-sub-title">Tim Khidmat <span class="jejak-imani-lc">jejak imani</span> Saudi Arabia</h2>
             </div>
 
-            <div class="ji-meta-lines">
-              <div class="ji-meta-row"><span class="ji-meta-label">No. Referensi</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.noReferensi}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Hari, Tanggal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatIndoDate(v.tanggal)}</span></div>
-              <div class="ji-section-heading">INFORMASI PEMBAYARAN</div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Diserahkan oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diserahkanOleh || 'Fathur Rahman Al Masyi'}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Diterima oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diterimaOleh}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Wilayah</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.wilayah || 'Madinah'}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Metode Pembayaran</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.metodePembayaran || 'Cash Riyal'}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Total Nominal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatSAR(v.totalNominal)}</span></div>
-              <div class="ji-meta-row"><span class="ji-meta-label">Terbilang</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">“${v.terbilang}”</span></div>
+            <div class="ji-section-heading" style="margin-bottom: 8px;">INFORMASI PEMBAYARAN</div>
+
+            <div class="ji-meta-grid-2col">
+              <div class="ji-meta-col">
+                <div class="ji-meta-row"><span class="ji-meta-label">Diserahkan oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diserahkanOleh || 'Fathur Rahman Al Masyi'}</span></div>
+                <div class="ji-meta-row"><span class="ji-meta-label">Diterima oleh</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.diterimaOleh}</span></div>
+                <div class="ji-meta-row"><span class="ji-meta-label">Total Nominal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val font-bold">${formatSAR(v.totalNominal)}</span></div>
+                <div class="ji-meta-row"><span class="ji-meta-label">Terbilang</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">“${v.terbilang}”</span></div>
+              </div>
+
+              <div class="ji-meta-col">
+                <div class="ji-meta-row"><span class="ji-meta-label">No. Referensi</span><span class="ji-meta-colon">:</span><span class="ji-meta-val font-bold">${v.noReferensi}</span></div>
+                <div class="ji-meta-row"><span class="ji-meta-label">Hari, Tanggal</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${formatIndoDate(v.tanggal)}</span></div>
+                <div class="ji-meta-row"><span class="ji-meta-label">Wilayah</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.wilayah || 'Madinah'}</span></div>
+                <div class="ji-meta-row"><span class="ji-meta-label">Pembayaran</span><span class="ji-meta-colon">:</span><span class="ji-meta-val">${v.metodePembayaran || 'Cash Riyal'}</span></div>
+              </div>
             </div>
 
             <div class="ji-section-heading">RINCIAN PEMBAYARAN</div>
@@ -1556,7 +1562,6 @@ function terbilang(nominal) {
     if (n < 12) return ' ' + angka[n];
     if (n < 20) return convert(n - 10) + ' Belas';
     if (n < 100) return convert(Math.floor(n / 10)) + ' Puluh' + convert(n % 10);
-    if (n < 200) return ' Seratus' + convert(n - 100);
     if (n < 1000) return convert(Math.floor(n / 100)) + ' Ratus' + convert(n % 100);
     if (n < 2000) return ' Seribu' + convert(n - 1000);
     if (n < 1000000) return convert(Math.floor(n / 1000)) + ' Ribu' + convert(n % 1000);
