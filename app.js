@@ -60,21 +60,28 @@ function preloadImagesAsBase64() {
   loadAsBase64('/ttd-diserahkan.png', (b64) => { ttdDiserahkanBase64 = b64; });
 }
 
+// ROBUST VOUCHER ID EXTRACTOR COMPATIBLE WITH SAFARI CLEAN URLS & QUERY PARAMS
+function extractVoucherIdFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  let voucherId = urlParams.get('id');
+  
+  if (!voucherId && window.location.pathname.includes('/doc/')) {
+    const parts = window.location.pathname.split('/doc/');
+    if (parts.length > 1) {
+      voucherId = parts[1].split('/')[0].split('?')[0].trim();
+    }
+  }
+  
+  return voucherId ? decodeURIComponent(voucherId).trim() : null;
+}
+
 // DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
   preloadImagesAsBase64();
   updateDatalists();
 
   const isRecipientPage = window.location.pathname.endsWith('penerima.html') || window.location.href.includes('penerima.html') || window.location.pathname.includes('/doc/');
-  const urlParams = new URLSearchParams(window.location.search);
-  
-  let voucherId = urlParams.get('id');
-  if (!voucherId && window.location.pathname.includes('/doc/')) {
-    const parts = window.location.pathname.split('/doc/');
-    if (parts.length > 1) {
-      voucherId = parts[1].replace(/\/$/, '');
-    }
-  }
+  const voucherId = extractVoucherIdFromUrl();
 
   setupGlobalEventDelegation();
   setup2FingerPinchZoom();
@@ -87,6 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         showLoadingRecipientState();
       }
+    } else {
+      showLoadingRecipientState();
     }
     fetchFromGoogleSheets();
   } else {
@@ -99,7 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // FETCH MASTER DATA FOR SEARCHBAR AUTOCOMPLETE SUGGESTIONS
 async function fetchMasterData() {
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getMasterData`);
+    const res = await fetch(`${SCRIPT_URL}?action=getMasterData&t=${Date.now()}`);
     if (res.ok) {
       const text = await res.text();
       if (text.startsWith('{') && text.endsWith('}')) {
@@ -155,6 +164,24 @@ function showLoadingRecipientState() {
   }
 }
 
+function showNotFoundRecipientState(voucherId) {
+  const container = document.getElementById('pdf-doc-content');
+  if (container) {
+    container.innerHTML = `
+      <div class="text-center" style="padding: 40px 16px; color: #0f172a; background: #ffffff; border-radius: 12px; margin: 20px auto; max-width: 440px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);">
+        <i class="fa-solid fa-triangle-exclamation text-warning" style="font-size: 38px; margin-bottom: 12px; display: block;"></i>
+        <h3 style="font-family: var(--font-serif); font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Data Dokumen Belum Ditemukan</h3>
+        <p style="font-size: 12px; color: #475569; margin-bottom: 16px; line-height: 1.5;">
+          Dokumen dengan referensi <strong style="color: #0f172a;">"${voucherId || '-'}"</strong> belum ditemukan di Google Sheets atau koneksi ke server memerlukan waktu lebih lama.
+        </p>
+        <button type="button" onclick="fetchFromGoogleSheets()" class="btn btn-navy btn-block">
+          <i class="fa-solid fa-arrows-rotate"></i> Coba Muat Ulang Data
+        </button>
+      </div>
+    `;
+  }
+}
+
 // INTELLIGENT PARSER FOR RINCIAN ITEMS
 function cleanAndParseRincianItem(item, fallbackNominal = 0) {
   let keb = (item.kebutuhanGrup || '').trim();
@@ -199,96 +226,100 @@ function cleanAndParseRincianItem(item, fallbackNominal = 0) {
   return { kebutuhanGrup: keb, keterangan: ket, nominal: nom };
 }
 
-// REAL-TIME DIRECT GOOGLE SHEETS LIVE SYNC
+// SAFARI-COMPATIBLE GOOGLE SHEETS LIVE SYNC
 async function fetchFromGoogleSheets() {
   isLoadingSheets = true;
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000);
+  // 12-second extended timeout for mobile Safari connections over 4G/Wi-Fi
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
 
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=get`, {
+    const res = await fetch(`${SCRIPT_URL}?action=get&t=${Date.now()}`, {
       method: 'GET',
+      mode: 'cors',
+      redirect: 'follow',
       signal: controller.signal
     });
     clearTimeout(timeoutId);
 
     if (res.ok) {
       const text = await res.text();
-      if (text.startsWith('[') && text.endsWith(']')) {
-        const data = JSON.parse(text);
-        if (Array.isArray(data)) {
-          const sheetVouchers = data.map(item => {
-            let rincianList = [];
-            const headerTotalNominal = parseFloat(item.totalNominal) || 0;
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch (pe) {
+        console.error('JSON parse error notice:', pe);
+      }
 
-            if (Array.isArray(item.rincian) && item.rincian.length > 0) {
-              rincianList = item.rincian.map(r => cleanAndParseRincianItem(r));
-            } else if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
-              const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
-              rincianList = lines.map((line, idx) => {
-                let cleanLine = line.replace(/^\d+\.\s*/, '').trim();
-                let parsed = cleanAndParseRincianItem({ kebutuhanGrup: cleanLine, keterangan: '', nominal: 0 });
-                if (parsed.nominal === 0 && idx === 0 && headerTotalNominal > 0) {
-                  parsed.nominal = headerTotalNominal;
-                }
-                return { no: idx + 1, ...parsed };
-              });
-            } else {
-              rincianList = [
-                { no: 1, kebutuhanGrup: item.rincianPembayaran || 'Operasional Saudi', keterangan: '-', nominal: headerTotalNominal }
-              ];
-            }
+      if (Array.isArray(data)) {
+        const sheetVouchers = data.map(item => {
+          let rincianList = [];
+          const headerTotalNominal = parseFloat(item.totalNominal) || 0;
 
-            const calculatedTotal = rincianList.reduce((acc, curr) => acc + (curr.nominal || 0), 0);
-            const finalTotalNominal = calculatedTotal > 0 ? calculatedTotal : headerTotalNominal;
+          if (Array.isArray(item.rincian) && item.rincian.length > 0) {
+            rincianList = item.rincian.map(r => cleanAndParseRincianItem(r));
+          } else if (typeof item.rincianPembayaran === 'string' && item.rincianPembayaran.trim()) {
+            const lines = item.rincianPembayaran.split('\n').filter(l => l.trim());
+            rincianList = lines.map((line, idx) => {
+              let cleanLine = line.replace(/^\d+\.\s*/, '').trim();
+              let parsed = cleanAndParseRincianItem({ kebutuhanGrup: cleanLine, keterangan: '', nominal: 0 });
+              if (parsed.nominal === 0 && idx === 0 && headerTotalNominal > 0) {
+                parsed.nominal = headerTotalNominal;
+              }
+              return { no: idx + 1, ...parsed };
+            });
+          } else {
+            rincianList = [
+              { no: 1, kebutuhanGrup: item.rincianPembayaran || 'Operasional Saudi', keterangan: '-', nominal: headerTotalNominal }
+            ];
+          }
 
-            const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
-            const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
-            const isSigned = isSignedLocally || item.status === 'Sudah Ditandatangani';
+          const calculatedTotal = rincianList.reduce((acc, curr) => acc + (curr.nominal || 0), 0);
+          const finalTotalNominal = calculatedTotal > 0 ? calculatedTotal : headerTotalNominal;
 
-            return {
-              id: item.id || item.noReferensi,
-              noReferensi: item.noReferensi || item.id,
-              tanggal: item.tanggal || new Date().toISOString().split('T')[0],
-              diserahkanOleh: item.diserahkanOleh || 'Fathur Rahman Al Masyi',
-              diterimaOleh: item.diterimaOleh || 'Penerima',
-              wilayah: item.wilayah || 'Madinah',
-              metodePembayaran: item.metodePembayaran || 'Cash Riyal',
-              rincian: rincianList,
-              totalNominal: finalTotalNominal,
-              terbilang: item.terbilang || terbilang(finalTotalNominal),
-              status: isSigned ? 'Sudah Ditandatangani' : (item.status || 'Menunggu Tanda Tangan'),
-              tandaTanganUrl: savedSig ? savedSig.tandaTanganUrl : (item.tandaTanganUrl || null),
-              tanggalDitandatangani: savedSig ? savedSig.tanggalDitandatangani : (item.tanggalDitandatangani || null)
-            };
-          });
+          const savedSig = signaturesStore[item.id] || signaturesStore[item.noReferensi];
+          const isSignedLocally = savedSig && savedSig.status === 'Sudah Ditandatangani';
+          const isSigned = isSignedLocally || item.status === 'Sudah Ditandatangani';
 
-          // 100% Direct Live Sync from Google Sheets
-          vouchers = sheetVouchers;
-          saveVouchersLocal();
-        }
+          return {
+            id: item.id || item.noReferensi,
+            noReferensi: item.noReferensi || item.id,
+            tanggal: item.tanggal || new Date().toISOString().split('T')[0],
+            diserahkanOleh: item.diserahkanOleh || 'Fathur Rahman Al Masyi',
+            diterimaOleh: item.diterimaOleh || 'Penerima',
+            wilayah: item.wilayah || 'Madinah',
+            metodePembayaran: item.metodePembayaran || 'Cash Riyal',
+            rincian: rincianList,
+            totalNominal: finalTotalNominal,
+            terbilang: item.terbilang || terbilang(finalTotalNominal),
+            status: isSigned ? 'Sudah Ditandatangani' : (item.status || 'Menunggu Tanda Tangan'),
+            tandaTanganUrl: savedSig ? savedSig.tandaTanganUrl : (item.tandaTanganUrl || null),
+            tanggalDitandatangani: savedSig ? savedSig.tanggalDitandatangani : (item.tanggalDitandatangani || null)
+          };
+        });
+
+        vouchers = sheetVouchers;
+        saveVouchersLocal();
       }
     }
   } catch (err) {
     console.log('Google Sheets Sync Notice:', err);
   } finally {
+    clearTimeout(timeoutId);
     isLoadingSheets = false;
     renderVouchersTable(vouchers);
     updateStats();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    let voucherId = urlParams.get('id');
-    if (!voucherId && window.location.pathname.includes('/doc/')) {
-      const parts = window.location.pathname.split('/doc/');
-      if (parts.length > 1) {
-        voucherId = parts[1].replace(/\/$/, '');
-      }
-    }
-
+    const voucherId = extractVoucherIdFromUrl();
     if (voucherId) {
       const v = vouchers.find(x => x.id === voucherId || x.noReferensi === voucherId);
-      if (v) renderRecipientView(v);
+      if (v) {
+        renderRecipientView(v);
+      } else {
+        // Guaranteed render fallback so Safari never stays stuck infinitely on loading spinner
+        showNotFoundRecipientState(voucherId);
+      }
     }
   }
 }
@@ -1562,6 +1593,7 @@ function terbilang(nominal) {
     if (n < 12) return ' ' + angka[n];
     if (n < 20) return convert(n - 10) + ' Belas';
     if (n < 100) return convert(Math.floor(n / 10)) + ' Puluh' + convert(n % 10);
+    if (n < 200) return ' Seratus' + convert(n - 100);
     if (n < 1000) return convert(Math.floor(n / 100)) + ' Ratus' + convert(n % 100);
     if (n < 2000) return ' Seribu' + convert(n - 1000);
     if (n < 1000000) return convert(Math.floor(n / 1000)) + ' Ribu' + convert(n % 1000);
