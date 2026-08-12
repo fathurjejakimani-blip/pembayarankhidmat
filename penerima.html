@@ -64,11 +64,17 @@
               </label>
             </div>
 
-            <!-- BUTTON FOR ENLARGED CANVAS SIGNATURE POPUP -->
+            <!-- BUTTON FOR ENLARGED CANVAS SIGNATURE POPUP & CAMERA FOTO TTD -->
             <div class="form-group margin-top-xs">
-              <button type="button" id="btn-open-canvas-modal" class="btn btn-outline btn-block btn-sm">
-                <i class="fa-solid fa-pen-nib text-navy"></i> Buka Canvas Tanda Tangan
-              </button>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <button type="button" id="btn-open-canvas-modal" class="btn btn-outline btn-block btn-sm" style="font-size: 11px; padding: 10px 4px;">
+                  <i class="fa-solid fa-pen-nib text-navy"></i> Canvas TTD
+                </button>
+                <button type="button" id="btn-trigger-camera" class="btn btn-outline btn-block btn-sm" style="font-size: 11px; padding: 10px 4px;">
+                  <i class="fa-solid fa-camera text-navy"></i> Foto TTD
+                </button>
+              </div>
+              <input type="file" id="camera-file-input" accept="image/*" capture="environment" class="hidden">
               <div id="sig-preview-status" class="margin-top-xs text-center"></div>
             </div>
 
