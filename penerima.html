@@ -115,7 +115,7 @@
         </div>
 
         <!-- LIVE VIDEO VIEWPORT WITH SCANNING VIEWFINDER OVERLAY -->
-        <div class="camera-viewport-wrapper">
+        <div id="camera-live-viewport" class="camera-viewport-wrapper">
           <video id="camera-scanner-video" autoplay playsinline muted></video>
           <div id="camera-viewfinder" class="camera-viewfinder">
             <div class="scan-line"></div>
@@ -127,9 +127,24 @@
           </div>
         </div>
 
-        <div class="modal-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
+        <!-- SCANNED RESULT PREVIEW VIEWPORT WITH TRANSPARENT CHECKERBOARD PATTERN -->
+        <div id="camera-preview-viewport" class="camera-viewport-wrapper hidden" style="background-color: #cbd5e1; background-image: radial-gradient(#94a3b8 1.5px, transparent 1.5px), radial-gradient(#94a3b8 1.5px, #f8fafc 1.5px); background-size: 20px 20px; background-position: 0 0, 10px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+          <img id="camera-result-preview-img" src="" alt="Pratinjau Hasil Pemindaian TTD" style="max-height: 85%; max-width: 85%; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.15));">
+          <span style="position: absolute; bottom: 8px; font-size: 10px; font-weight: 700; color: #0f172a; background: rgba(255,255,255,0.85); padding: 2px 10px; border-radius: 10px;">
+            <i class="fa-solid fa-circle-check text-success"></i> TTD Transparan & Kontras
+          </span>
+        </div>
+
+        <!-- LIVE CAMERA ACTIONS -->
+        <div id="camera-live-actions" class="modal-buttons" style="display: flex; gap: 8px; margin-top: 12px;">
           <button type="button" id="btn-switch-camera" class="btn btn-outline" style="flex: 1;"><i class="fa-solid fa-arrows-rotate"></i> Putar Kamera</button>
           <button type="button" id="btn-capture-camera" class="btn btn-navy" style="flex: 2;"><i class="fa-solid fa-circle-dot"></i> Ambil Foto & Pindai</button>
+        </div>
+
+        <!-- PREVIEW CONFIRMATION ACTIONS -->
+        <div id="camera-preview-actions" class="modal-buttons hidden" style="display: flex; gap: 8px; margin-top: 12px;">
+          <button type="button" id="btn-retake-camera" class="btn btn-outline" style="flex: 1;"><i class="fa-solid fa-rotate-left"></i> Ulangi Foto</button>
+          <button type="button" id="btn-use-camera-sig" class="btn btn-navy" style="flex: 2;"><i class="fa-solid fa-check"></i> Gunakan Tanda Tangan Ini</button>
         </div>
       </div>
     </div>
