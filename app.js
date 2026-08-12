@@ -27,6 +27,8 @@ let selectedVoucher = null;
 let signatureDataUrl = null;
 let isDrawing = false;
 let isLoadingSheets = false;
+let cameraStream = null;
+let currentFacingMode = 'environment';
 
 // Preloaded Image Data URLs to guarantee 100% html2canvas capture without CORS taint
 let bgLetterheadBase64 = '';
@@ -738,7 +740,7 @@ function showPreviewModal(voucher) {
   setup2FingerPinchZoom();
 }
 
-// ==================== 2. RECIPIENT PORTAL LOGIC & CAMERA SIGNATURE PROCESSING ====================
+// ==================== 2. RECIPIENT PORTAL & LIVE SCANNER CAMERA LOGIC ====================
 function initRecipientPortal(id) {
   currentVoucher = vouchers.find(v => v.id === id || v.noReferensi === id);
   if (currentVoucher) {
@@ -780,45 +782,63 @@ function renderRecipientView(v) {
     chkAgreement.onchange = checkCanSubmit;
   }
 
-  // Camera Signature Trigger & Processing Event Handlers
+  // Live Camera Scanner Event Handlers
   const btnTriggerCamera = document.getElementById('btn-trigger-camera');
+  const modalCameraOverlay = document.getElementById('modal-camera-scanner-overlay');
+  const btnCloseCamera = document.getElementById('btn-close-camera-modal');
+  const btnCaptureCamera = document.getElementById('btn-capture-camera');
+  const btnSwitchCamera = document.getElementById('btn-switch-camera');
   const cameraFileInput = document.getElementById('camera-file-input');
 
-  if (btnTriggerCamera && cameraFileInput) {
-    btnTriggerCamera.onclick = () => cameraFileInput.click();
+  if (btnTriggerCamera) {
+    btnTriggerCamera.onclick = () => {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        if (modalCameraOverlay) modalCameraOverlay.classList.remove('hidden');
+        startCameraScanner();
+      } else if (cameraFileInput) {
+        cameraFileInput.click();
+      }
+    };
+  }
 
+  if (btnCloseCamera) {
+    btnCloseCamera.onclick = stopCameraScanner;
+  }
+
+  if (btnSwitchCamera) {
+    btnSwitchCamera.onclick = () => {
+      currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+      startCameraScanner();
+    };
+  }
+
+  if (btnCaptureCamera) {
+    btnCaptureCamera.onclick = captureAndProcessViewfinderSignature;
+  }
+
+  if (cameraFileInput) {
     cameraFileInput.onchange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
       const sigStatusEl = document.getElementById('sig-preview-status');
       if (sigStatusEl) {
-        sigStatusEl.innerHTML = `
-          <span style="color: #1e3a8a; font-weight: 700; font-size: 11px;">
-            <i class="fa-solid fa-spinner fa-spin"></i> Memproses foto & menghapus background...
-          </span>
-        `;
+        sigStatusEl.innerHTML = `<span style="color: #1e3a8a; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-spinner fa-spin"></i> Memproses foto & memindai TTD...</span>`;
       }
 
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-          processCameraSignature(img, (transparentDataUrl, errorMsg) => {
+          processImageSignature(img, (transparentDataUrl, errorMsg) => {
             if (errorMsg) {
               alert(errorMsg);
-              if (sigStatusEl) {
-                sigStatusEl.innerHTML = `<span style="color: #e11d48; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> ${errorMsg}</span>`;
-              }
+              if (sigStatusEl) sigStatusEl.innerHTML = `<span style="color: #e11d48; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> ${errorMsg}</span>`;
               signatureDataUrl = null;
             } else {
               signatureDataUrl = transparentDataUrl;
               if (sigStatusEl) {
-                sigStatusEl.innerHTML = `
-                  <span style="font-weight: 700; color: #059669; font-size: 11px;">
-                    <i class="fa-solid fa-camera-retro"></i> Foto TTD Berhasil Diproses (Transparan)
-                  </span>
-                `;
+                sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Pemindaian Foto TTD Berhasil (Transparan)</span>`;
               }
               checkCanSubmit();
             }
@@ -855,7 +875,6 @@ function renderRecipientView(v) {
         currentVoucher.tandaTanganUrl = signatureDataUrl;
         currentVoucher.tanggalDitandatangani = new Date().toISOString();
 
-        // Save to permanent signature store
         signaturesStore[currentVoucher.id] = {
           tandaTanganUrl: signatureDataUrl,
           tanggalDitandatangani: currentVoucher.tanggalDitandatangani,
@@ -882,8 +901,97 @@ function renderRecipientView(v) {
   setup2FingerPinchZoom();
 }
 
-// AUTOMATIC CAMERA SIGNATURE INK THRESHOLDING, AUTO-CROP & TRANSPARENCY CONVERTER
-function processCameraSignature(img, callback) {
+// LIVE CAMERA STREAM & SCANNER VIEWFINDER CROPPER
+async function startCameraScanner() {
+  stopCameraStreamTracks();
+
+  const video = document.getElementById('camera-scanner-video');
+  if (!video) return;
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: currentFacingMode },
+        width: { ideal: 1280 },
+        height: { ideal: 960 }
+      },
+      audio: false
+    });
+    video.srcObject = cameraStream;
+    await video.play();
+  } catch (err) {
+    console.error('Camera stream access notice:', err);
+    stopCameraScanner();
+    const fileInp = document.getElementById('camera-file-input');
+    if (fileInp) fileInp.click();
+  }
+}
+
+function stopCameraStreamTracks() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+}
+
+function stopCameraScanner() {
+  stopCameraStreamTracks();
+  const modal = document.getElementById('modal-camera-scanner-overlay');
+  if (modal) modal.classList.add('hidden');
+}
+
+function captureAndProcessViewfinderSignature() {
+  const video = document.getElementById('camera-scanner-video');
+  const viewfinder = document.getElementById('camera-viewfinder');
+  if (!video || !viewfinder || video.readyState !== 4) return;
+
+  const vRect = video.getBoundingClientRect();
+  const vfRect = viewfinder.getBoundingClientRect();
+
+  // Compute viewfinder box coordinates relative to video element
+  const scaleX = video.videoWidth / vRect.width;
+  const scaleY = video.videoHeight / vRect.height;
+
+  const cropX = Math.round((vfRect.left - vRect.left) * scaleX);
+  const cropY = Math.round((vfRect.top - vRect.top) * scaleY);
+  const cropW = Math.round(vfRect.width * scaleX);
+  const cropH = Math.round(vfRect.height * scaleY);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = cropW;
+  canvas.height = cropH;
+  const ctx = canvas.getContext('2d');
+
+  ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  stopCameraScanner();
+
+  const sigStatusEl = document.getElementById('sig-preview-status');
+  if (sigStatusEl) {
+    sigStatusEl.innerHTML = `<span style="color: #1e3a8a; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-spinner fa-spin"></i> Memindahkan TTD & Menghapus Latar Belakang...</span>`;
+  }
+
+  const img = new Image();
+  img.onload = () => {
+    processImageSignature(img, (transparentDataUrl, errorMsg) => {
+      if (errorMsg) {
+        alert(errorMsg);
+        if (sigStatusEl) sigStatusEl.innerHTML = `<span style="color: #e11d48; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-circle-xmark"></i> ${errorMsg}</span>`;
+        signatureDataUrl = null;
+      } else {
+        signatureDataUrl = transparentDataUrl;
+        if (sigStatusEl) {
+          sigStatusEl.innerHTML = `<span style="font-weight: 700; color: #059669; font-size: 11px;"><i class="fa-solid fa-circle-check"></i> Pemindaian Bingkai TTD Berhasil (Transparan)</span>`;
+        }
+        checkCanSubmit();
+      }
+    });
+  };
+  img.src = canvas.toDataURL('image/png');
+}
+
+// AUTOMATIC INK THRESHOLDING, AUTO-CROP & TRANSPARENCY CONVERTER
+function processImageSignature(img, callback) {
   const canvas = document.createElement('canvas');
   let width = img.width;
   let height = img.height;
@@ -948,12 +1056,12 @@ function processCameraSignature(img, callback) {
     }
   }
 
-  if (inkPixelCount < 20 || minX >= maxX || minY >= maxY) {
-    callback(null, 'Tanda tangan tidak terdeteksi pada foto. Mohon foto kertas putih dengan pencahayaan terang.');
+  if (inkPixelCount < 15 || minX >= maxX || minY >= maxY) {
+    callback(null, 'Tanda tangan tidak terdeteksi di dalam bingkai. Mohon posisikan tanda tangan di dalam bingkai hijau dengan kertas terang.');
     return;
   }
 
-  const pad = 12;
+  const pad = 10;
   const cropX = Math.max(0, minX - pad);
   const cropY = Math.max(0, minY - pad);
   const cropW = Math.min(width - cropX, (maxX - minX) + (pad * 2));
